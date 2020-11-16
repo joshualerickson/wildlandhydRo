@@ -1,0 +1,15 @@
+Package: wildlandhydRo
+Type: Package
+Title: Wildland Hydrology
+Version: 0.1.0
+Author: Josh Erickson
+Maintainer: Josh Erickson <joshua.l.erickson@usda.gov>
+Description: This is a package for wildland hydrologists but also anyone who uses hydroclimatic workflows.
+    The goal is to create wrapper functions around commonly used packages like streamstats, nhdplusTools, snotel, and AOI and 
+    provide accessible functions for culvert sizing, quick reports and EDA into extreme events. Basically, a package for me but 
+    worth sharing with others.
+License: USDA
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+
