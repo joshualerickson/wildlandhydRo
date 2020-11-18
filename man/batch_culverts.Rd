@@ -4,7 +4,7 @@
 \alias{batch_culverts}
 \title{Batch Culvert Sizes}
 \usage{
-batch_culverts(ss, rre = NULL, bfw = NULL, acw = NULL, geo = 1)
+batch_culverts(ss, rre = NULL, bfw = NULL, geo = 1)
 }
 \arguments{
 \item{ss}{A \link[wildlandhydRo]{batch_StreamStats} object}
@@ -27,6 +27,14 @@ from \insertCite{ries2017streamstats}{wildlandhydRo}, \insertCite{omang1986metho
 \insertCite{american1983handbook}{wildlandhydRo}. Right now, this is only good for western Montana so if data
 includes other states then they will be \strong{removed} from this analysis. In the future, possibly open for a more
 dynamic approach, e.g. (nationwide).
+}
+\examples{
+\dontrun{
+
+#bring in previous batch_StreamStats() and batch_RRE() objects, e.g., three_sites, rre_peak.
+
+culverts_all <- batch_culverts(ss = three_sites, rre = ree, bfw = c(10,12,11))
+}
 }
 \references{
 {

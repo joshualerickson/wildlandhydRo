@@ -8,9 +8,10 @@ Description: This is a package for wildland hydrologists but also anyone who use
     The goal is to create wrapper functions around commonly used packages like streamstats, nhdplusTools, snotel, and AOI and 
     provide accessible functions for culvert sizing, quick reports and EDA into extreme events. Basically, a package for me but 
     worth sharing with others.
-License: USDA
+License: CC0
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
-Imports: Rdpack
+Imports: Rdpack, dplyr, tidyr, magrittr, plyr,readr,lwgeom, sf, jsonlite, httr, datasets, AOI, purrr, streamstats, geojsonsf
+Suggests: testthat, knitr, rmarkdown, ggplot2
 RdMacros: Rdpack

@@ -30,7 +30,7 @@ which use methods from \insertCite{ries2017streamstats}{wildlandhydRo}
 
 data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
                  Lon = c(-115.54327, -114.75546, -116.05935),
-                   Site = c("Granite Creek", "Libby Creek", "WF Blue Creek"))
+                   Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
 
 three_sites <- batch_StreamStats(lon = data$Lon, lat = data$Lat, group = data$Site,
                                   crs = 4326)

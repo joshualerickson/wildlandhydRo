@@ -10,6 +10,8 @@ batch_RRE(state, wkID, group = NULL)
 \item{state}{An abbreviated State \code{character}, e.g. "MT"}
 
 \item{wkID}{A workspace ID generated in \link[wildlandhydRo]{batch_StreamStats}}
+
+\item{group}{A vector to group by}
 }
 \value{
 Returns a data.frame with associated regional regression estimates.
@@ -30,14 +32,14 @@ rre_peak <- batch_RRE(state = data$state, wkID = data$wkID)
 
 data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
                  Lon = c(-115.54327, -114.75546, -116.05935),
-                   Site = c("Granite Creek", "Libby Creek", "WF Blue Creek"))
+                   Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
 
 three_sites <- batch_StreamStats(lon = data$Lon, lat = data$Lat, group = data$Site,
                                   crs = 4326)
 
 rre_peak <- batch_RRE(state = three_sites$state, wkID = three_sites$wkID, group = three_sites$group)
 
-}#' @importFrom Rdpack reprompt
+}
 }
 \references{
 {

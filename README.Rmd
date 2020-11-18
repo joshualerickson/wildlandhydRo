@@ -1,5 +1,6 @@
 ---
 output: github_document
+always_allow_html: true
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -11,6 +12,12 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   out.width = "100%"
 )
+library(magrittr)
+library(ggplot2)
+library(ggrepel)
+library(kableExtra)
+library(tidyverse)
+load("D:/R_folder/R/Random/wildlandhydRo.Rdata")
 ```
 
 # wildlandhydRo
@@ -30,10 +37,64 @@ devtools::install_github("joshualerickson/wildlandhydRo")
 ```
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+This is a basic example which shows you how to solve a common problem: getting more than one culvert sized.
 
-```{r example}
+```{r example, message=FALSE, error=FALSE, warning=FALSE}
 library(wildlandhydRo)
 ## basic example code
+```
+
+This delineates the basins and then computes basin characteristics (e.g. precip, basin area, percent forested, etc.). The advantage of `batch_StreamStats()` is you can do more than one at a time. See example below.
+```{r, eval=FALSE}
+# data frame with 3 different pour point locations
+data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
+                  Lon = c(-115.54327, -114.75546, -116.05935),
+                   Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
+
+three_sites <- batch_StreamStats(lon = data$Lon, lat = data$Lat, group = data$Site,
+                                  crs = 4326)
+```
+
+You can see that 'WF Blue Creek' is right on the border of Montana and Idaho. The function accounts for that and provides the necessary stream stats.  
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE, out.width='75%'}
+three_sites %>% ggplot() + geom_sf() +  ggrepel::geom_label_repel(
+    data = three_sites, size = 2.5,
+    aes(label = group, geometry = geometry),
+    stat = "sf_coordinates", force = 30
+  ) +
+  theme_light() + borders("state") + coord_sf(ylim = c(48,49), xlim = c(-116.5, -114.8))
+
+```
+<br>
+
+Now we can use `batch_RRE()` to get regional regression estimates. Here we'll use the `three_sites` named object as the parameter input for the function. Note you don't have to use a `batch_StreamStats()` object and could just manually enter the correct parameters. 
+
+```{r, eval=FALSE}
+peak_RRE <- batch_RRE(state = three_sites$state, wkID = three_sites$wkID, group = three_sites$group)
+```
+
+
+Then we can plot together. Below are the three different sites and the regional regression estimates (RRE) plotting for these pour points. 
+
+```{r, fig.height=2, fig.width=7}
+peak_RRE %>% ggplot(aes(parse_number(Name), Value)) + geom_line() + geom_point() + facet_wrap(~group, scales = "free")
+```
+
+The next step is to generate recommended culvert sizes for a set of reoccurrence intervals (e.g. 2,25,50,100) based on the stream stats collected in the previous steps. It's important to note that this is only available for western Montana right now. Also, we don't have bankfull width measurements and it is highly recommended to include if you can. 
+
+```{r}
+culverts_all <- batch_culverts(ss = three_sites, rre = peak_RRE)
+```
+
+Then we can plot and see the difference between regressions.
+
+```{r, warning=FALSE, error=FALSE, message=FALSE}
+culverts_all %>% ggplot(aes(RI, value, color = source)) + geom_point() + geom_line() + facet_grid(group~Method, scales = "free")
+```
+
+No we can see what the recommended culvert sizes are in a table, only showing the first 10.
+```{r, echo = FALSE}
+culverts_all  %>% head() %>% kableExtra::kable() %>% kableExtra::kable_styling()
 ```
 

@@ -12,6 +12,16 @@
 #' \insertAllCited{}
 #' }
 #' @importFrom Rdpack reprompt
+#' @import datasets
+#' @importFrom streamstats writeGeoJSON computeChars
+#' @importFrom geojsonsf geojson_sf
+#' @importFrom AOI geocode_rev
+#' @importFrom sf st_as_sf
+#' @importFrom purrr map
+#' @importFrom tidyr nest pivot_wider
+#' @importFrom dplyr group_by left_join select filter mutate
+#' @importFrom plyr rbind.fill
+#' @importFrom magrittr "%>%"
 #' @return Returns an sf (simple feature) object with associated basin characteristics.
 #' @export
 #'
@@ -20,7 +30,7 @@
 #'
 #' data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
 #'                  Lon = c(-115.54327, -114.75546, -116.05935),
-#'                    Site = c("Granite Creek", "Libby Creek", "WF Blue Creek"))
+#'                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
 #'
 #' three_sites <- batch_StreamStats(lon = data$Lon, lat = data$Lat, group = data$Site,
 #'                                   crs = 4326)
@@ -31,7 +41,7 @@
 
 batch_StreamStats <- function(lon, lat, group = NULL, crs = 4326){
 
-  # Create a vector of state abbreviations using AOI::geocode_rev()
+  # Create a vector of state abbreviations
 
   st <- vector()
 
@@ -47,19 +57,19 @@ batch_StreamStats <- function(lon, lat, group = NULL, crs = 4326){
 
   if (is.null(group)){
 
-    usgs_raws <- cbind.data.frame(lat = lat, lon = lon, state = st)
+    usgs_raws <- cbind.data.frame(lat = lat, lon = lon, state = st, crs = crs)
 
    watersheds <-  usgs_raws %>% mutate(group = row_number()) %>% group_by(group) %>%
      nest() %>%
-     mutate(ws = map(data,~tryCatch(delineateWatershed(.$lon,.$lat , rcode = .$state, crs = ifelse(crs == 4326, 4326, crs)), error=function(e){cat("ERROR :",conditionMessage(e), "\n")})))
+     mutate(ws = map(data,~tryCatch({dl_ws(.)}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})))
 
   } else {
 
-    usgs_raws <- cbind.data.frame(lat = lat, lon = lon, group = group, state = st)
+    usgs_raws <- cbind.data.frame(lat = lat, lon = lon, group = group, state = st, crs = crs)
 
     watersheds <- usgs_raws %>% group_by(group) %>%
       nest() %>%
-  mutate(ws = map(data,~tryCatch(delineateWatershed(.$lon,.$lat , rcode = .$state, crs = ifelse(crs == 4326, 4326, crs)), error=function(e){cat("ERROR :",conditionMessage(e), "\n")})))
+  mutate(ws = map(data,~tryCatch({dl_ws(.)}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})))
 
   }
 
@@ -73,6 +83,7 @@ for (i in 1:nrow(watersheds)) {
     usgs_ws <- pluck(watersheds$ws) %>% pluck(i)  %>%
       streamstats::writeGeoJSON(., file.path(tempdir(),"ss_tmp.json")) %>%
       geojsonsf::geojson_sf() %>% st_as_sf()
+
     usgs_ws$group <- pluck(watersheds$group) %>% pluck(i) %>% paste()
     usgs_ws$wkID <- watersheds$ws[[i]]$workspaceID
     usgs_ws$state <- paste(st[[i]])
@@ -110,6 +121,7 @@ return(usgs_poly)
 #' Uses methods from \insertCite{ries2017streamstats}{wildlandhydRo} to generate RRE's.
 #' @param state An abbreviated State \code{character}, e.g. "MT"
 #' @param wkID A workspace ID generated in \link[wildlandhydRo]{batch_StreamStats}
+#' @param group A vector to group by
 #' @return Returns a data.frame with associated regional regression estimates.
 #' @examples \dontrun{
 #' # Bring in data
@@ -122,14 +134,19 @@ return(usgs_poly)
 #'
 #' data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
 #'                  Lon = c(-115.54327, -114.75546, -116.05935),
-#'                    Site = c("Granite Creek", "Libby Creek", "WF Blue Creek"))
+#'                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
 #'
 #' three_sites <- batch_StreamStats(lon = data$Lon, lat = data$Lat, group = data$Site,
 #'                                   crs = 4326)
 #'
 #' rre_peak <- batch_RRE(state = three_sites$state, wkID = three_sites$wkID, group = three_sites$group)
 #'
-#' }#' @importFrom Rdpack reprompt
+#' }
+#' @importFrom Rdpack reprompt
+#' @importFrom dplyr select tibble
+#' @importFrom jsonlite fromJSON
+#' @importFrom httr GET write_disk
+#' @importFrom plyr rbind.fill
 #' @references {
 #' \insertAllCited{}
 #' }
@@ -139,7 +156,7 @@ return(usgs_poly)
 
 batch_RRE <- function(state, wkID, group = NULL) {
 
-
+  Name <- code <- Description <- Value <- Equation <- NULL
   #if less than 1 ID then just run below code
 if (length(wkID) <= 1) {
 
@@ -222,15 +239,23 @@ if(is.null(group)){
 #' @param bfw A vector of Bankfull Width's (BFW)
 #' @param geo A geologic parameter, e.g. \code{0-1}
 #' @return Returns a data.frame with flood frequencies and culvert size estimations.
-#' @examples
+#' @examples \dontrun{
+#'
+#' #bring in previous batch_StreamStats() and batch_RRE() objects, e.g., three_sites, rre_peak.
+#'
+#' culverts_all <- batch_culverts(ss = three_sites, rre = ree, bfw = c(10,12,11))
+#' }
 #' @importFrom Rdpack reprompt
+#' @importFrom dplyr mutate filter
+#' @importFrom readr parse_number
+#' @importFrom tidyr pivot_longer
 #' @references {
 #' \insertAllCited{}
 #' }
 #' @export
 #'
 
-batch_culverts <- function(ss,rre = NULL, bfw = NULL,acw = NULL, geo = 1) {
+batch_culverts <- function(ss, rre = NULL, bfw = NULL,geo = 1) {
 
   if (is.null(bfw)) {
 
@@ -242,7 +267,7 @@ batch_culverts <- function(ss,rre = NULL, bfw = NULL,acw = NULL, geo = 1) {
   }
 
 
-  ss <- ss %>% filter(state %in% "MT")
+  ss <- ss %>% dplyr::filter(state %in% "MT")
 
   if(nrow(ss)<1) {stop("No states from Montana")}
 
@@ -375,10 +400,10 @@ batch_culverts <- function(ss,rre = NULL, bfw = NULL,acw = NULL, geo = 1) {
   } else {
 
     culvert_usgs <- culvert_usgs %>% select(basin_char = Value, ReturnInterval = Name) %>%
-      mutate(source = "USGS Regression", group = rre$group) %>% filter(ReturnInterval %in% c("2 Year Peak Flood", "25 Year Peak Flood",
+      mutate(source = "USGS Regression", group = rre$group) %>% dplyr::filter(ReturnInterval %in% c("2 Year Peak Flood", "25 Year Peak Flood",
                                                                                              "50 Year Peak Flood", "100 Year Peak Flood"))}
 
-  culvert_usgs <- culvert_usgs %>% filter(group %in% ss$group)
+  culvert_usgs <- culvert_usgs %>% dplyr::filter(group %in% ss$group)
 
   together <- plyr::rbind.fill(Omang_parrett_hull_flows, parrett_and_johnson, culvert_usgs)
 
