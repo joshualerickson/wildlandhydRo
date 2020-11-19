@@ -190,7 +190,7 @@ if (nrow(wkID) <= 1) {
                                                        "peak_tmp.json"),overwrite = TRUE))
 
 
-  peak <- jsonlite::fromJSON(file.path(tempdir(),"peak_tmp.json"))
+  peak_s <- jsonlite::fromJSON(file.path(tempdir(),"peak_tmp.json"))
 
 
   peak_s <- (peak_s$RegressionRegions[[1]])[[6]][[1]] %>%
