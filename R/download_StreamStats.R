@@ -16,7 +16,7 @@
 #' @importFrom sf st_as_sf
 #' @importFrom purrr map
 #' @importFrom tidyr nest pivot_wider
-#' @importFrom dplyr group_by left_join select filter mutate row_number
+#' @importFrom dplyr group_by left_join select filter mutate row_number tibble
 #' @importFrom plyr rbind.fill
 #' @importFrom magrittr "%>%"
 #' @return Returns an sf (simple feature) object with associated basin characteristics.
@@ -38,13 +38,25 @@
 
 batch_StreamStats <- function(lon, lat, group = NULL, crs = 4326){
 
+
+  # error catching
+
+  lon <- data.frame(lon = lon)
+  lat <- data.frame(lat = lat)
+  group <- data.frame(group = group)
+
+  if(!nrow(lon) == nrow(lat)) {stop("lat and lon are not the same length")}
+
+  if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon")}
+
+
   # Create a vector of state abbreviations
 
   st <- vector()
 
-  for(i in seq_along(lon)){
+  for(i in 1:nrow(lon)){
 
-    state <-   AOI::geocode_rev(c(lat[i],lon[i])) %>% dplyr::select(state)
+    state <-   AOI::geocode_rev(c(lat[i,],lon[i,])) %>% dplyr::select(state)
     state <-  state.abb[grep(paste(state$state), state.name)]
     st <- append(st, state)
   }
