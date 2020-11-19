@@ -12,14 +12,11 @@
 #' \insertAllCited{}
 #' }
 #' @importFrom Rdpack reprompt
-#' @import datasets
-#' @importFrom streamstats writeGeoJSON computeChars
 #' @importFrom geojsonsf geojson_sf
-#' @importFrom AOI geocode_rev
 #' @importFrom sf st_as_sf
 #' @importFrom purrr map
 #' @importFrom tidyr nest pivot_wider
-#' @importFrom dplyr group_by left_join select filter mutate
+#' @importFrom dplyr group_by left_join select filter mutate row_number
 #' @importFrom plyr rbind.fill
 #' @importFrom magrittr "%>%"
 #' @return Returns an sf (simple feature) object with associated basin characteristics.
@@ -246,9 +243,11 @@ if(is.null(group)){
 #' culverts_all <- batch_culverts(ss = three_sites, rre = ree, bfw = c(10,12,11))
 #' }
 #' @importFrom Rdpack reprompt
-#' @importFrom dplyr mutate filter
 #' @importFrom readr parse_number
 #' @importFrom tidyr pivot_longer
+#' @importFrom dplyr across filter mutate select
+#' @importFrom ape where
+#' @importFrom plyr rbind.fill
 #' @references {
 #' \insertAllCited{}
 #' }
