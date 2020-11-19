@@ -43,11 +43,9 @@ batch_StreamStats <- function(lon, lat, group = NULL, crs = 4326){
 
   lon <- data.frame(lon = lon)
   lat <- data.frame(lat = lat)
-  group <- data.frame(group = group)
+
 
   if(!nrow(lon) == nrow(lat)) {stop("lat and lon are not the same length")}
-
-  if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon")}
 
 
   # Create a vector of state abbreviations
@@ -73,6 +71,10 @@ batch_StreamStats <- function(lon, lat, group = NULL, crs = 4326){
      mutate(ws = map(data,~tryCatch({dl_ws(.)}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})))
 
   } else {
+
+group <- data.frame(group = group)
+
+if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon")}
 
     usgs_raws <- cbind.data.frame(lat = lat, lon = lon, group = group, state = st, crs = crs)
 
@@ -166,12 +168,18 @@ return(usgs_poly)
 batch_RRE <- function(state, wkID, group = NULL) {
 
   Name <- code <- Description <- Value <- Equation <- NULL
+
+  state <- data.frame(state = state)
+  wkID <- data.frame(wkID = wkID)
+
+  if(!nrow(state) == nrow(wkID)) {stop("wkID and state are not the same length")}
+
   #if less than 1 ID then just run below code
-if (length(wkID) <= 1) {
+if (nrow(wkID) <= 1) {
 
   base_url <- paste0(
-    "https://streamstats.usgs.gov/streamstatsservices/flowstatistics.json?rcode=",state,"&workspaceID=",
-    wkID,
+    "https://streamstats.usgs.gov/streamstatsservices/flowstatistics.json?rcode=",state[1,],"&workspaceID=",
+    wkID[1,],
     "&includeflowtypes=true"
   )
 
@@ -194,11 +202,11 @@ if (length(wkID) <= 1) {
   #iterate through workspaceID's and states
  peak <- tibble()
 
-  for(i in seq_along(wkID)){
+  for(i in 1:nrow(wkID)){
 
   base_url <- paste0(
-    "https://streamstats.usgs.gov/streamstatsservices/flowstatistics.json?rcode=",state[[i]],"&workspaceID=",
-    wkID[[i]],
+    "https://streamstats.usgs.gov/streamstatsservices/flowstatistics.json?rcode=",state[i,],"&workspaceID=",
+    wkID[i,],
     "&includeflowtypes=true"
   )
 
@@ -216,9 +224,11 @@ if (length(wkID) <= 1) {
 
    # what to name the groups if used
 if(is.null(group)){
-  peak_s
+  peak_s <- peak_s %>% mutate(group = paste0(i)) %>% as.data.frame()
 } else {
-  peak_s <- peak_s %>% mutate(group = paste(group[[i]])) %>% as.data.frame()
+  group <- data.frame(group = group)
+  if(!nrow(group) == nrow(state)) {stop("group is not the same length as wkID or state")}
+  peak_s <- peak_s %>% mutate(group = paste(group[i,])) %>% as.data.frame()
   }
 
   #route into tibble()
@@ -268,14 +278,18 @@ if(is.null(group)){
 
 batch_culverts <- function(ss, rre = NULL, bfw = NULL,geo = 1) {
 
+
+
   if (is.null(bfw)) {
 
     ss <- ss %>% mutate(geo = geo)
 
   } else {
-
+    bfw_test <- data.frame(bfw_test = bfw)
+    if(!nrow(bfw_test) == nrow(ss)){stop("bfw is not the same length as ss")}
     ss <- ss %>% mutate(bfw = bfw, geo = geo)
   }
+
 
 
   ss <- ss %>% dplyr::filter(state %in% "MT")
