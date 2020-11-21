@@ -1,3 +1,83 @@
+
+
+#' Delineate watersheds
+#' @description Hijacked streamstats function delineateWatershed() to add a retry() call because
+#' frequently the function will send a 'set vector 0/0' but maybe just needs to be ran again?
+#' This is a possible work-around but is likely to go away because I have suspicion it doesn't work...
+#' @param df A filtered data.frame
+#' @return hopefully a geojson feature collection. If not then either in AK or server is not responding correctly and a NULL is returned
+#' @importFrom magrittr "%>%"
+#' @importFrom purrr pluck
+
+dl_ws <- function(df){
+
+  for(i in 1:2){
+
+    dl <- tryCatch({streamstats::delineateWatershed(df$lon, df$lat, rcode = df$state, crs = df$crs)},
+                   error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+
+    dlt <- pluck(dl$featurecollection)
+    dl <- if(!is.null(dlt)) {dl} else NULL
+    if(!is.null(dl)) return(dl)
+
+  }
+  df
+}
+
+
+
+#' Delineate watersheds
+#' @description Hijacked streamstats function computeChars() and writeGeoJSON to run a for loop getting the geojson polygon and associated
+#' polygon stats
+#' @param df A nested data.frame
+#' @return two tibbles. one with flow stats and the other with basin stats
+#' @importFrom magrittr "%>%"
+#' @importFrom purrr pluck
+#' @importFrom streamstats computeChars writeGeoJSON
+#' @importFrom geojsonsf geojson_sf
+#' @importFrom plyr rbind.fill
+#' @importFrom dplyr tibble
+#' @importFrom sf st_as_sf
+#'
+#'
+
+get_flow_basin <- function(watersheds, st) {
+  usgs_ws_polys <- tibble()
+  usgs_flow_stats <- tibble()
+
+  for (i in 1:nrow(watersheds)) {
+    tryCatch({
+      usgs_ws <- pluck(watersheds$ws) %>% pluck(i)  %>%
+        streamstats::writeGeoJSON(., file.path(tempdir(),"ss_tmp.json")) %>%
+        geojsonsf::geojson_sf() %>% st_as_sf()
+
+      usgs_ws$group <- pluck(watersheds$group) %>% pluck(i) %>% paste()
+      usgs_ws$wkID <- watersheds$ws[[i]]$workspaceID
+      usgs_ws$state <- paste(st[[i]])
+      usgs_ws_polys <- plyr::rbind.fill(usgs_ws_polys, usgs_ws)
+
+      flow_stats <- streamstats::computeChars(workspaceID = watersheds$ws[[i]]$workspaceID, rcode = st[[i]])
+
+      flow_stats <- flow_stats$parameters
+
+      flow_stats$group <- pluck(watersheds$group) %>% pluck(i) %>% paste()
+
+      usgs_flow_stats <- plyr::rbind.fill(usgs_flow_stats, flow_stats)
+
+    }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+
+  }
+
+  bundle_list <- list(usgs_flow_stats = usgs_flow_stats, usgs_ws_polys = usgs_ws_polys)
+  return(bundle_list)
+}
+
+
+
+
+
+
+
 #' @title Download Multiple Stream Stats Locations
 #'
 #' @description Takes longitude and latitude vectors and returns an sf object. Uses \link[AOI]{geocode_rev} to get
@@ -38,7 +118,6 @@
 
 batch_StreamStats <- function(lon, lat, group = NULL, crs = 4326){
 
-
   # error catching
 
   lon <- data.frame(lon = lon)
@@ -68,7 +147,7 @@ batch_StreamStats <- function(lon, lat, group = NULL, crs = 4326){
 
    watersheds <-  usgs_raws %>% mutate(group = row_number()) %>% group_by(group) %>%
      nest() %>%
-     mutate(ws = map(data,~tryCatch({dl_ws(.)}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})))
+     mutate(ws = map(data,~dl_ws(.)))
 
   } else {
 
@@ -80,43 +159,31 @@ if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon
 
     watersheds <- usgs_raws %>% group_by(group) %>%
       nest() %>%
-  mutate(ws = map(data,~tryCatch({dl_ws(.)}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})))
+  mutate(ws = map(data,~dl_ws(.)))
 
   }
 
 # compute basin characteristics ----
 
-usgs_ws_polys <- tibble()
-usgs_flow_stats <- tibble()
-
-for (i in 1:nrow(watersheds)) {
-  tryCatch({
-    usgs_ws <- pluck(watersheds$ws) %>% pluck(i)  %>%
-      streamstats::writeGeoJSON(., file.path(tempdir(),"ss_tmp.json")) %>%
-      geojsonsf::geojson_sf() %>% st_as_sf()
-
-    usgs_ws$group <- pluck(watersheds$group) %>% pluck(i) %>% paste()
-    usgs_ws$wkID <- watersheds$ws[[i]]$workspaceID
-    usgs_ws$state <- paste(st[[i]])
-    usgs_ws_polys <- plyr::rbind.fill(usgs_ws_polys, usgs_ws)
-
-    flow_stats <- streamstats::computeChars(workspaceID = watersheds$ws[[i]]$workspaceID, rcode = st[[i]])
-
-    flow_stats <- flow_stats$parameters
-
-    flow_stats$group <- pluck(watersheds$group) %>% pluck(i) %>% paste()
-
-    usgs_flow_stats <- plyr::rbind.fill(usgs_flow_stats, flow_stats)
-
-  }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-
-}
+bundled_list <- get_flow_basin(watersheds, st = st)
 
 # Bring it together ----
 
-usgs_flow_stats <- usgs_flow_stats %>% select(code, value, group) %>% pivot_wider(names_from = code, values_from = value)
+usgs_flow_stats <- bundled_list$usgs_flow_stats %>%
+    select(code, value, group) %>%
+    pivot_wider(names_from = code, values_from = value)
 
-usgs_poly <- usgs_ws_polys  %>% select(group, HUCID,wkID,state, geometry) %>% left_join(usgs_flow_stats, by = "group") %>% st_as_sf()
+usgs_poly <- bundled_list$usgs_ws_polys  %>%
+  select(group, HUCID,wkID,state, geometry) %>%
+  left_join(usgs_flow_stats, by = "group") %>% st_as_sf()
+
+# return usgs_poly if not using groups
+
+if(is.null(group)){return(usgs_poly)}
+
+#if using groups let the user know which ones if any didn't parse
+if(nrow(filter(usgs_raws, !group %in% usgs_poly$group)) > 0) {print(paste0("This group was not generated: ", filter(usgs_raws, !group %in% usgs_poly$group) %>% select(group)))}
+
 
 return(usgs_poly)
 }
