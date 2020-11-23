@@ -2,9 +2,9 @@
 % Please edit documentation in R/download_USGS.R
 \name{wymUSGS}
 \alias{wymUSGS}
-\title{Water Year & Monthly Stats}
+\title{Water Year & Monthly Stats (USGS)}
 \usage{
-wymUSGS(cleanDV)
+wymUSGS(procDV)
 }
 \arguments{
 \item{cleanDV}{}
@@ -13,5 +13,5 @@ wymUSGS(cleanDV)
 
 }
 \description{
-Water Year & Monthly Stats
+Water Year & Monthly Stats (USGS)
 }

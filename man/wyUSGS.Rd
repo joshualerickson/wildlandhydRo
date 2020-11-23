@@ -2,13 +2,13 @@
 % Please edit documentation in R/download_USGS.R
 \name{wyUSGS}
 \alias{wyUSGS}
-\title{Water Year Stats}
+\title{Water Year Stats (USGS)}
 \usage{
-wyUSGS(cleanDV)
+wyUSGS(procDV)
 }
 \value{
 
 }
 \description{
-Water Year Stats
+Water Year Stats (USGS)
 }
