@@ -7,7 +7,7 @@
 get_SNOTEL(AOI = NULL)
 }
 \arguments{
-\item{AOI}{A sf object}
+\item{AOI}{A AOI object}
 }
 \value{
 A \code{data.frame}

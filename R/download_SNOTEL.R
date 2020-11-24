@@ -611,13 +611,16 @@ reportSNOTEL <- function(Sites = NULL, procDV = NULL, days = 7) {
 #' @description A function that locates the nearest SNOTEL station and returns a sf object. This function only works with
 #' a sf object and is really handy when using
 #' \link[AOI]{AOI-package} functions. This function is hijacked from \link[nhdplusTools]{get_NWIS}.
-#' @param AOI A sf object
+#' @param AOI A AOI object
 #' @return A \code{data.frame}
 #' @export
 #' @examples
 get_SNOTEL = function(AOI = NULL){
 
   AOI_type <- sf::st_geometry_type(AOI)
+
+ meta_sf <- wildlandhydRo::meta_data %>% mutate(row.id = row_number()) %>%
+    sf::st_as_sf(coords = c("longitude", "latitude")) %>% sf::st_set_crs(4269)
 
   if(AOI_type == "POINT"){
     pt  <-  AOI
@@ -630,8 +633,7 @@ get_SNOTEL = function(AOI = NULL){
 
   }
 
-  meta_sf <- wildlandhydRo::meta_data %>% mutate(row.id = row_number()) %>%
-    sf::st_as_sf(coords = c("longitude", "latitude")) %>% sf::st_set_crs(4269)
+
 
 
 
