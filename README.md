@@ -55,7 +55,7 @@ e.g. precipitation.
 <img src="man/figures/README-unnamed-chunk-3-1.png" width="75%" /> <br>
 
 Now we can use `batch_RRE()` to get regional regression estimates. Here
-we’ll use the `three_sites` named object as the parameter input for the
+we’ll use the `four_sites` named object as the parameter input for the
 function. Note you don’t have to use a `batch_StreamStats()` object and
 could just manually enter the correct parameters.
 
@@ -63,8 +63,8 @@ could just manually enter the correct parameters.
 peak_RRE <- four_sites %>% batch_RRE(state = state, wkID = wkID, group = group)
 ```
 
-Then we can plot together. Below are the three different sites and the
-regional regression estimates (RRE) plotting for these pour points.
+Then we can plot together. Below are the four sites and the calculated
+regional regression estimates (RRE).
 
 ``` r
 peak_RRE %>% ggplot(aes(parse_number(Name), Value)) + geom_line() + geom_point() + facet_wrap(~group, nrow = 1)

@@ -7,7 +7,9 @@
 get_flow_basin(watersheds, st)
 }
 \arguments{
-\item{df}{A nested data.frame}
+\item{watersheds}{A nested data.frame}
+
+\item{st}{A vector with state abbreviations}
 }
 \value{
 two tibbles. one with flow stats and the other with basin stats

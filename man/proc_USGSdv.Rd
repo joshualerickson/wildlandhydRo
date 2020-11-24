@@ -13,7 +13,7 @@ proc_USGSdv(sites, parameterCd = "00060", start_date = "", end_date = "")
 
 \item{start_date}{A character of date format, e.g. \code{"1990-09-01"}}
 
-\item{end_state}{A character of date format, e.g. \code{"1990-09-01"}}
+\item{end_date}{A character of date format, e.g. \code{"1990-09-01"}}
 }
 \value{
 A \code{data.frame} with daily mean flow and added meta-data.

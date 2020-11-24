@@ -28,7 +28,8 @@ dl_ws <- function(df){
 #' Delineate watersheds
 #' @description Hijacked streamstats function computeChars() and writeGeoJSON to run a for loop getting the geojson polygon and associated
 #' polygon stats
-#' @param df A nested data.frame
+#' @param watersheds A nested data.frame
+#' @param st A vector with state abbreviations
 #' @return two tibbles. one with flow stats and the other with basin stats
 #' @importFrom magrittr "%>%"
 #' @importFrom purrr pluck

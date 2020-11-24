@@ -43,7 +43,7 @@ snotel_wild_custom <- function(df) {
 
 #' Change colnames snotel report
 #'
-#' @param df
+#' @param df A data frame
 #' @description hijacked 'snotelr' package functions and manipulated
 #' @return a function for changing colnames for report
 #'

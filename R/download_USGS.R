@@ -38,7 +38,7 @@ proc_USGSdv <- function(sites, parameterCd = "00060", start_date = "", end_date 
                     readNWISsite(site_id_usgs$sites[[i]]) %>% select(station_nm) %>% as.character()))
 
   discharge <- readNWISdv(siteNumbers = site_id_usgs$sites[[i]], parameterCd = parameterCd,
-                          startDate = start_date, endDate = end_date, statCd = "00030") %>%
+                          startDate = start_date, endDate = end_date, statCd = "00003") %>%
     renameNWISColumns() %>%
     mutate(
       drainage_area = readNWISsite(site_id_usgs$sites[[i]]) %>% select(drain_area_va) %>% as.numeric(),
@@ -54,8 +54,11 @@ proc_USGSdv <- function(sites, parameterCd = "00060", start_date = "", end_date 
 
   }
   usgs_raw_dv <- usgs_raw_dv %>%
-    mutate(year = year(Date), month = month(Date),
-           day = day(Date),month_day = str_c(month, day, sep = "-"),
+    mutate(Date = lubridate::as_date(Date),
+           year = year(Date),
+           month = month(Date),
+           day = day(Date),
+           month_day = str_c(month, day, sep = "-"),
            wy = smwrBase::waterYear(Date, TRUE),
            month_abb = factor(month.abb[month], levels = month.abb),
            month_day = str_c(month, day, sep = "-"))
