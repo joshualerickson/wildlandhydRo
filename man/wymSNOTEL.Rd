@@ -2,16 +2,19 @@
 % Please edit documentation in R/download_SNOTEL.R
 \name{wymSNOTEL}
 \alias{wymSNOTEL}
-\title{Water Year & Monthly Stats}
+\title{Water Year & Monthly Stats (SNOTEL)}
 \usage{
-wymSNOTEL(Sites = NULL, procDV = NULL)
+wymSNOTEL(sites = NULL, procDV = NULL)
 }
 \arguments{
-\item{procDV}{}
+\item{sites}{A vector of SNOTEL site locations, e.g. \code{c("311", "500")}}
+
+\item{procDV}{A previously created \link[wildlandhydRo]{proc_SNOTELdv} object}
 }
 \value{
-
+A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.
 }
 \description{
-Water Year & Monthly Stats
+This function gets snotel data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. It generates
+the maximum and mean of snow water equivalent and snow depth per water year per month.
 }

@@ -7,11 +7,16 @@
 reportSNOTEL(Sites = NULL, procDV = NULL, days = 7)
 }
 \arguments{
-\item{days}{}
+\item{procDV}{A previously created \link[wildlandhydRo]{proc_SNOTELdv} object}
+
+\item{days}{A \code{numeric} input for days}
+
+\item{sites}{A vector of SNOTEL site locations, e.g. \code{c("311", "500")}}
 }
 \value{
-
+A \code{data.frame}
 }
 \description{
-Snotel Report
+This function gets SNOTEL report data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. This includes
+percentage of median from 1981-2010. Also included is current years data and the previous years data as well.
 }

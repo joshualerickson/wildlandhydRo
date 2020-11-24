@@ -86,21 +86,33 @@ snotel_report_custom <- function(df) {
 
 #' Process SNOTEL daily values
 #'
-#' @param Sites
-#' @description This function gets daily snotel data from "https://wcc.sc.egov.usda.gov/reportGenerator/" website. This
+#' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}
+#' @description This function gets daily snotel data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. This
 #' function is similar to \link[snotelr]{snotel_download} except it includes english units and adds snow depth as a variable.
 #'
-#' @return A data.frame with SNOTEL metrics.
+#' @return A \code{data.frame} with SNOTEL metrics that capture the following variables: \code{snow_water_equivalent},
+#' \code{precipitation_cumulative},
+#' \code{temperature_max},
+#' \code{temperature_min},
+#' \code{temperature_mean},
+#' \code{precipitation},
+#' \code{snow_depth}.
+#'
+#'
+#'
+#'
+#'
+
 #' @importFrom httr GET write_disk http_error
 #' @importFrom plyr rbind.fill
 #' @export
 #'
 
-proc_SNOTELdv <- function(Sites) {
+proc_SNOTELdv <- function(sites) {
 
 
   # download meta-data
-  meta_data <- meta_data[which(meta_data$site_id %in% Sites),]
+  meta_data <- meta_data[which(meta_data$site_id %in% sites),]
 
   # check if the provided site index is valid
   if (nrow(meta_data) == 0){
@@ -166,18 +178,18 @@ proc_SNOTELdv <- function(Sites) {
 }
 
 #' Water Year Stats (SNOTEL)
+#' @description This function gets snotel data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. It generates
+#' the maximum and mean of snow water equivalent and snow depth per water year.
+#' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}
+#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object
 #'
-#' @param Sites
-#' @param procDV
-#' @param days
-#'
-#' @return
+#' @return A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.
 #' @export
 #'
 #' @examples
-wySNOTEL <- function(Sites = NULL, procDV = NULL) {
+wySNOTEL <- function(sites = NULL, procDV = NULL) {
 
-  if(!is.null(Sites) & !is.null(procDV)){stop("Can't use both Sites and procDV")}
+  if(!is.null(sites) & !is.null(procDV)){stop("Can't use both Sites and procDV")}
 
   if(!is.null(procDV)) {
 
@@ -264,12 +276,13 @@ snotel_download_wy <- snotel_download_wy %>%
 
 }
 
-#' Water Year & Monthly Stats
+#' Water Year & Monthly Stats (SNOTEL)
+#' @description This function gets snotel data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. It generates
+#' the maximum and mean of snow water equivalent and snow depth per water year per month.
+#' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}
+#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object
 #'
-#' @param Sites
-#' @param procDV
-#'
-#' @return
+#' @return A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.
 #' @export
 #' @importFrom stringr str_remove str_extract str_c
 #' @importFrom readr parse_number read_csv
@@ -277,9 +290,9 @@ snotel_download_wy <- snotel_download_wy %>%
 #' @importFrom lubridate as_date
 #'
 #' @examples
-wymSNOTEL <- function(Sites = NULL, procDV = NULL) {
+wymSNOTEL <- function(sites = NULL, procDV = NULL) {
 
-  if(!is.null(Sites) & !is.null(procDV)){stop("Can't use both Sites and procDV")}
+  if(!is.null(sites) & !is.null(procDV)){stop("Can't use both Sites and procDV")}
 
   if(!is.null(procDV)) {
 
@@ -374,10 +387,11 @@ wymSNOTEL <- function(Sites = NULL, procDV = NULL) {
 }
 
 #' Month-Only Stats (SNOTEL)
+#' @description This function uses a \link[wildlandhydRo]{proc_SNOTELdv} object to generate
+#' month only statistics for snow water equivalent and snow depth.
+#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object
 #'
-#' @param wymDV A \link[wildlandhydRo]{proc_SNOTELdv} object.
-#'
-#' @return A data.frame with month only statistics for snow water equivalent and snow depth.
+#' @return A data.frame
 #' @export
 #' @importFrom dplyr group_by summarise mutate relocate
 #'
@@ -404,22 +418,22 @@ monthSNOTEL <- function(procDV) {
 }
 
 #' Hourly SNOTEL
-#' @description This function gets hourly SNOTEL data from "https://wcc.sc.egov.usda.gov/reportGenerator/" website.
-#' @param Sites
-#' @param procDV
-#' @param days
+#' @description This function gets hourly SNOTEL data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website.
+#' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}
+#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object
+#' @param days A \code{numeric} input of days, e.g. 1 = 24 hrs.
 #' @importFrom httr GET write_disk http_error
 #' @importFrom plyr rbind.fill
 #' @importFrom stringr str_to_title
 #' @importFrom lubridate as_date ymd_hm
-#' @return A data.frame with hourly SNOTEL metrics
+#' @return A data.frame with hourly SNOTEL data
 #' @export
 #'
 #' @examples
-hourlySNOTEL <- function(Sites = NULL, procDV = NULL, days = 7) {
+hourlySNOTEL <- function(sites = NULL, procDV = NULL, days = 7) {
 
   if(length(days) > 1){stop("only length 1 vector")}
-  if(!is.null(Sites) & !is.null(procDV)){stop("Can't use both Sites and procDV")}
+  if(!is.null(sites) & !is.null(procDV)){stop("Can't use both Sites and procDV")}
 
  if(!is.null(procDV)) {
 
@@ -501,12 +515,13 @@ hourlySNOTEL <- function(Sites = NULL, procDV = NULL, days = 7) {
 
 
 #' Snotel Report
+#' @description This function gets SNOTEL report data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. This includes
+#' percentage of median from 1981-2010. Also included is current years data and the previous years data as well.
+#' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}
+#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object
+#' @param days A \code{numeric} input for days
 #'
-#' @param Sites
-#' @param procDV
-#' @param days
-#'
-#' @return
+#' @return A \code{data.frame}
 #' @export
 #' @importFrom readr read_csv
 #' @examples
@@ -593,13 +608,14 @@ reportSNOTEL <- function(Sites = NULL, procDV = NULL, days = 7) {
 
 
 #' Get SNOTEL locations
-#'
-#' @param AOI
-#' @description Get the nearest snotel site.
-#' @return
+#' @description A function that locates the nearest SNOTEL station and returns a sf object. This function only works with
+#' a sf object and is really handy when using
+#' \link[AOI]{AOI-package} functions. This function is hijacked from \link[nhdplusTools]{get_NWIS}.
+#' @param AOI A sf object
+#' @return A \code{data.frame}
 #' @export
 #' @examples
-get_snotel = function(AOI = NULL){
+get_SNOTEL = function(AOI = NULL){
 
   AOI_type <- sf::st_geometry_type(AOI)
 

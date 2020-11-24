@@ -7,11 +7,12 @@
 wymUSGS(procDV)
 }
 \arguments{
-\item{cleanDV}{}
+\item{procDV}{A previously created \link[wildlandhydRo]{proc_USGSdv} object.}
 }
 \value{
-
+A \code{data.frame}
 }
 \description{
-Water Year & Monthly Stats (USGS)
+This function uses the results of the \link[wildlandhydRo]{proc_USGSdv} object to
+generate mean, maximum, median and standard deviation per water year per month.
 }

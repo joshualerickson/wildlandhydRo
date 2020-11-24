@@ -1,10 +1,11 @@
 
 
 #' Process USGS daily values
+#' @description This function is basically a wrapper around \link[dataRetrieval]{readNWISdv} but includes
+#' added variables like water year, lat/lon, station name, altitude and tidied dates.
+#' @param sites A vector of USGS NWIS sites
 #'
-#' @param Sites
-#'
-#' @return A data.frame
+#' @return A \code{data.frame} with daily mean flow and added meta-data.
 #' @export
 #'
 #' @importFrom dataRetrieval readNWISdv renameNWISColumns readNWISsite
@@ -15,11 +16,11 @@
 #'
 #'
 
-proc_USGSdv <- function(Sites, parameterCd = "00060", start_date = "", end_date = "", statCd = "00003") {
+proc_USGSdv <- function(sites, parameterCd = "00060", start_date = "", end_date = "", statCd = "00003") {
 
 
 
-  site_id_usgs <- data.frame(Sites = Sites)
+  site_id_usgs <- data.frame(sites = sites)
 
 
   usgs_raw_dv <- data.frame()
@@ -30,18 +31,18 @@ proc_USGSdv <- function(Sites, parameterCd = "00060", start_date = "", end_date 
     usgs_data <-
 
     message(sprintf("Downloading site: %s, with id: %s\n", # some feedback on the download progress
-                    site_id_usgs$Sites[i],
-                    readNWISsite(site_id_usgs$Sites[[i]]) %>% select(station_nm) %>% as.character()))
+                    site_id_usgs$sites[i],
+                    readNWISsite(site_id_usgs$sites[[i]]) %>% select(station_nm) %>% as.character()))
 
-  discharge <- readNWISdv(siteNumbers = site_id_usgs$Sites[[i]], parameterCd = parameterCd,
+  discharge <- readNWISdv(siteNumbers = site_id_usgs$sites[[i]], parameterCd = parameterCd,
                           startDate = start_date, endDate = end_date, statCd = statCd) %>%
     renameNWISColumns() %>%
     mutate(
-      drainage_area = readNWISsite(site_id_usgs$Sites[[i]]) %>% select(drain_area_va) %>% as.numeric(),
-      Station = readNWISsite(site_id_usgs$Sites[[i]]) %>% select(station_nm) %>% as.character(),
-      lat = readNWISsite(site_id_usgs$Sites[[i]]) %>% select(dec_lat_va) %>% as.numeric(),
-      long = readNWISsite(site_id_usgs$Sites[[i]]) %>% select(dec_long_va) %>% as.numeric(),
-      altitude = readNWISsite(site_id_usgs$Sites[[i]]) %>% select(alt_va) %>% as.numeric())
+      drainage_area = readNWISsite(site_id_usgs$sites[[i]]) %>% select(drain_area_va) %>% as.numeric(),
+      Station = readNWISsite(site_id_usgs$sites[[i]]) %>% select(station_nm) %>% as.character(),
+      lat = readNWISsite(site_id_usgs$sites[[i]]) %>% select(dec_lat_va) %>% as.numeric(),
+      long = readNWISsite(site_id_usgs$sites[[i]]) %>% select(dec_long_va) %>% as.numeric(),
+      altitude = readNWISsite(site_id_usgs$sites[[i]]) %>% select(alt_va) %>% as.numeric())
 
 
   usgs_raw_dv <- plyr::rbind.fill(usgs_raw_dv, discharge)},
@@ -72,12 +73,11 @@ return(usgs_raw_dv)
 
 
 #' Water Year Stats (USGS)
-#'
-#' @param Sites
-#' @param parameterCd
-#' @param start_date
-#' @param end_date
-#' @param statCd
+#' @description This function uses the results of the \link[wildlandhydRo]{proc_USGSdv} object to
+#' generate mean, maximum, median and standard deviation per water year. It also includes peaks from
+#' \link[dataRetrieval]{readNWISpeak} and normalization
+#' by \code{log(Flow)/log(drainage area)} and \code{log(Flow)/log(all time mean flow)}.
+#' @param procDV A previously created \link[wildlandhydRo]{proc_USGSdv} object.
 #' @importFrom lubridate year month day
 #' @importFrom dplyr mutate filter group_by summarise slice_head ungroup
 #' @importFrom stringr str_c str_remove_all
@@ -151,9 +151,10 @@ return(usgs_min_max_wy)
 
 #' Water Year & Monthly Stats (USGS)
 #'
-#' @param cleanDV
-#'
-#' @return
+#' @description This function uses the results of the \link[wildlandhydRo]{proc_USGSdv} object to
+#' generate mean, maximum, median and standard deviation per water year per month.
+#' @param procDV A previously created \link[wildlandhydRo]{proc_USGSdv} object.
+#' @return A \code{data.frame}
 #' @export
 #' @importFrom dplyr group_by mutate across summarise rename right_join ungroup
 #' @importFrom tidyr pivot_wider
@@ -184,9 +185,10 @@ usgs_raw_min_max_wy_month<- usgs_raw_min_max_wy_month %>%
 
 #' Month-Only Stats (USGS)
 #'
-#' @param cleanDV
-#'
-#' @return
+#' @description This function uses the results of the \link[wildlandhydRo]{proc_USGSdv} object to
+#' generate mean, maximum, median and standard deviation for month-only.
+#' @param procDV A previously created \link[wildlandhydRo]{proc_USGSdv} object.
+#' @return A \code{data.frame}
 #' @export
 #' @importFrom dplyr group_by summarise mutate relocate
 #'

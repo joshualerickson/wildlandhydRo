@@ -3,7 +3,7 @@
 export(batch_RRE)
 export(batch_StreamStats)
 export(batch_culverts)
-export(get_snotel)
+export(get_SNOTEL)
 export(hourlySNOTEL)
 export(hourlyUSGS)
 export(monthSNOTEL)

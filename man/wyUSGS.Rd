@@ -6,9 +6,15 @@
 \usage{
 wyUSGS(procDV)
 }
+\arguments{
+\item{procDV}{A previously created \link[wildlandhydRo]{proc_USGSdv} object.}
+}
 \value{
 
 }
 \description{
-Water Year Stats (USGS)
+This function uses the results of the \link[wildlandhydRo]{proc_USGSdv} object to
+generate mean, maximum, median and standard deviation per water year. It also includes peaks from
+\link[dataRetrieval]{readNWISpeak} and normalization
+by \code{log(Flow)/log(drainage area)} and \code{log(Flow)/log(all time mean flow)}.
 }

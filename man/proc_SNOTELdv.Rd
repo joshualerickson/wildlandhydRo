@@ -4,12 +4,21 @@
 \alias{proc_SNOTELdv}
 \title{Process SNOTEL daily values}
 \usage{
-proc_SNOTELdv(Sites)
+proc_SNOTELdv(sites)
+}
+\arguments{
+\item{sites}{A vector of SNOTEL site locations, e.g. \code{c("311", "500")}}
 }
 \value{
-A data.frame with SNOTEL metrics.
+A \code{data.frame} with SNOTEL metrics that capture the following variables: \code{snow_water_equivalent},
+\code{precipitation_cumulative},
+\code{temperature_max},
+\code{temperature_min},
+\code{temperature_mean},
+\code{precipitation},
+\code{snow_depth}.
 }
 \description{
-This function gets daily snotel data from "https://wcc.sc.egov.usda.gov/reportGenerator/" website. This
+This function gets daily snotel data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. This
 function is similar to \link[snotelr]{snotel_download} except it includes english units and adds snow depth as a variable.
 }

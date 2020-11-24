@@ -4,11 +4,18 @@
 \alias{hourlySNOTEL}
 \title{Hourly SNOTEL}
 \usage{
-hourlySNOTEL(Sites = NULL, procDV = NULL, days = 7)
+hourlySNOTEL(sites = NULL, procDV = NULL, days = 7)
+}
+\arguments{
+\item{sites}{A vector of SNOTEL site locations, e.g. \code{c("311", "500")}}
+
+\item{procDV}{A previously created \link[wildlandhydRo]{proc_SNOTELdv} object}
+
+\item{days}{A \code{numeric} input of days, e.g. 1 = 24 hrs.}
 }
 \value{
-A data.frame with hourly SNOTEL metrics
+A data.frame with hourly SNOTEL data
 }
 \description{
-This function gets hourly SNOTEL data from "https://wcc.sc.egov.usda.gov/reportGenerator/" website.
+This function gets hourly SNOTEL data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website.
 }

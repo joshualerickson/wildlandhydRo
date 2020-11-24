@@ -5,7 +5,7 @@
 \title{Process USGS daily values}
 \usage{
 proc_USGSdv(
-  Sites,
+  sites,
   parameterCd = "00060",
   start_date = "",
   end_date = "",
@@ -13,13 +13,14 @@ proc_USGSdv(
 )
 }
 \arguments{
-\item{Sites}{}
+\item{sites}{A vector of USGS NWIS sites}
 }
 \value{
-A data.frame
+A \code{data.frame} with daily mean flow and added meta-data.
 }
 \description{
-Process USGS daily values
+This function is basically a wrapper around \link[dataRetrieval]{readNWISdv} but includes
+added variables like water year, lat/lon, station name, altitude and tidied dates.
 }
 \examples{
 

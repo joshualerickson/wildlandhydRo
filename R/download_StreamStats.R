@@ -194,7 +194,7 @@ return(usgs_poly)
 
 
 
-#' @title Batch USGS Reginal Regression Estimates (RRE)
+#' @title Batch USGS Regional Regression Estimates (RRE)
 #' @description Provides the USGS regressions from a \link[wildlandhydRo]{batch_StreamStats} object or manually entered params.
 #' Uses methods from \insertCite{ries2017streamstats}{wildlandhydRo} to generate RRE's.
 #' @param state An abbreviated State \code{character}, e.g. "MT"

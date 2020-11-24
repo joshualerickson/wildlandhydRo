@@ -4,14 +4,17 @@
 \alias{wySNOTEL}
 \title{Water Year Stats (SNOTEL)}
 \usage{
-wySNOTEL(Sites = NULL, procDV = NULL)
+wySNOTEL(sites = NULL, procDV = NULL)
 }
 \arguments{
-\item{days}{}
+\item{sites}{A vector of SNOTEL site locations, e.g. \code{c("311", "500")}}
+
+\item{procDV}{A previously created \link[wildlandhydRo]{proc_SNOTELdv} object}
 }
 \value{
-
+A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.
 }
 \description{
-Water Year Stats (SNOTEL)
+This function gets snotel data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. It generates
+the maximum and mean of snow water equivalent and snow depth per water year.
 }

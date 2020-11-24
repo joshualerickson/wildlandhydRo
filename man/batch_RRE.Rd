@@ -2,7 +2,7 @@
 % Please edit documentation in R/download_StreamStats.R
 \name{batch_RRE}
 \alias{batch_RRE}
-\title{Batch USGS Reginal Regression Estimates (RRE)}
+\title{Batch USGS Regional Regression Estimates (RRE)}
 \usage{
 batch_RRE(state, wkID, group = NULL)
 }
