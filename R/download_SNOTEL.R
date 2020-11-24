@@ -1,6 +1,6 @@
 #' Change colnames snotel
 #'
-#' @param df
+#' @param df A data.frame
 #' @description hijacked 'snotelr' package functions and manipulated
 #' @return a function for changing colnames
 #'
@@ -245,7 +245,7 @@ wySNOTEL <- function(procDV, sites = NULL) {
       }
 
       # read in the snotel data
-      df <- readr::read_csv(file.path(tempdir(),"snotel_tmp.csv"),comment = "#", col_types = cols())
+      df <- readr::read_csv(file.path(tempdir(),"snotel_tmp.csv"),comment = "#", col_types = readr::cols())
 
       # subsitute column names
       # define new column names
@@ -287,7 +287,7 @@ snotel_download_wy <- snotel_download_wy %>%
 #' @return A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.
 #' @export
 #' @importFrom stringr str_remove str_extract str_c
-#' @importFrom readr parse_number read_csv
+#' @importFrom readr parse_number read_csv cols
 #' @importFrom httr GET http_error write_disk
 #' @importFrom lubridate as_date
 #'
@@ -348,7 +348,7 @@ wymSNOTEL <- function(procDV, sites = NULL) {
       }
 
       # read in the snotel data
-      df <- readr::read_csv(file.path(tempdir(),"snotel_tmp.csv"),comment = "#", col_types = cols())
+      df <- readr::read_csv(file.path(tempdir(),"snotel_tmp.csv"),comment = "#", col_types = readr::cols())
 
       # subsitute column names
       # define new column names

@@ -85,9 +85,10 @@ return(usgs_raw_dv)
 #' by \code{log(Flow)/log(drainage area)} and \code{log(Flow)/log(all time mean flow)}.
 #' @param procDV A previously created \link[wildlandhydRo]{proc_USGSdv} object.
 #' @importFrom lubridate year month day
-#' @importFrom dplyr mutate filter group_by summarise slice_head ungroup
+#' @importFrom dplyr mutate filter group_by summarise slice_head ungroup everything
 #' @importFrom stringr str_c str_remove_all
 #' @importFrom smwrBase waterYear
+#' @importFrom stats median sd
 #'
 #' @return
 #' @export
@@ -103,7 +104,7 @@ wyUSGS <- function(procDV) {
 usgs_raw <- procDV %>% mutate(Flow = ifelse(Flow <= 0 , Flow + 0.01, Flow))
 
 usgs_min_max_wy <- usgs_raw %>%
-  group_by(.data$Station) %>%
+  group_by(Station) %>%
   mutate(atmf = mean(Flow, na.rm = TRUE)) %>%
   ungroup() %>%
   group_by(Station,wy, site_no) %>%
@@ -150,7 +151,7 @@ for (i in 1:nrow(peak_sites)) {
 }
 
 usgs_min_max_wy <- usgs_min_max_wy %>% left_join(peaks, by = c("site_no", "wy")) %>%
-  select(Station, site_no, wy, Peak = peak_va, peak_dt, everything())
+  select(Station, site_no, wy, Peak = peak_va, peak_dt, dplyr::everything())
 
 return(usgs_min_max_wy)
 }
@@ -315,7 +316,7 @@ hourlyUSGS <- function(procDV, sites = NULL, days = 7) {
     df <- df[-1,]
 
     df <- renameNWISColumns(df) %>%
-      select(site_no, datetime, contains("_Flow"))
+      select(site_no, datetime, dplyr::contains("_Flow"))
     #add metadata
 
     df <- df %>%

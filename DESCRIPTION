@@ -16,7 +16,7 @@ Imports: Rdpack, dplyr, tidyr, magrittr,
           plyr, readr, sf, jsonlite, httr, 
           purrr, geojsonsf, AOI, streamstats, 
           datasets, ape, dataRetrieval, stringr,
-          lubridate, smwrBase, snotelr
+          lubridate, smwrBase, snotelr, stats
 Remotes: 
          mikejohnson51/AOI, 
          markwh/streamstats

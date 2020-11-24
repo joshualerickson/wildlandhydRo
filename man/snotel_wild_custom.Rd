@@ -6,6 +6,9 @@
 \usage{
 snotel_wild_custom(df)
 }
+\arguments{
+\item{df}{A data.frame}
+}
 \value{
 a function for changing colnames
 }
