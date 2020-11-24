@@ -4,14 +4,14 @@
 \alias{batch_culverts}
 \title{Batch Culvert Sizes}
 \usage{
-batch_culverts(ss, rre = NULL, bfw = NULL, geo = 1)
+batch_culverts(ss, rre = NULL, bfw, geo = 1)
 }
 \arguments{
 \item{ss}{A \link[wildlandhydRo]{batch_StreamStats} object}
 
-\item{rre}{A \link[wildlandhydRo]{batch_RRE} object}
+\item{rre}{A \link[wildlandhydRo]{batch_RRE} object. \code{optional}}
 
-\item{bfw}{A vector of Bankfull Width's (BFW)}
+\item{bfw}{A vector of Bankfull Width's (BFW). \code{optional}}
 
 \item{geo}{A geologic parameter, e.g. \code{0-1}}
 }

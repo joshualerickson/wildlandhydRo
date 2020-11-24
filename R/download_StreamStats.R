@@ -15,7 +15,6 @@ dl_ws <- function(df){
 
     dl <- tryCatch({streamstats::delineateWatershed(df$lon, df$lat, rcode = df$state, crs = df$crs)},
                    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-
     dlt <- pluck(dl$featurecollection)
     dl <- if(!is.null(dlt)) {dl} else NULL
     if(!is.null(dl)) return(dl)
@@ -84,9 +83,10 @@ get_flow_basin <- function(watersheds, st) {
 #' the state identifier and \link[streamstats]{computeChars} and \link[streamstats]{delineateWatershed} to generate basin
 #' delineation(s) and characteristics,
 #' which use methods from \insertCite{ries2017streamstats}{wildlandhydRo}
+#' @param data A \code{data.frame} with \code{lon,lat} variables. \code{optional}
 #' @param lon A \code{numeric} vector of longitude values
 #' @param lat A \code{numeric} vector of latitude values
-#' @param group A vector to group by
+#' @param group A vector to group by. \code{optional}
 #' @param crs A \code{numeric} crs value
 #' @references {
 #' \insertAllCited{}
@@ -116,12 +116,21 @@ get_flow_basin <- function(watersheds, st) {
 
 
 
-batch_StreamStats <- function(lon, lat, group = NULL, crs = 4326){
+batch_StreamStats <- function(data = NULL,lon, lat, group, crs = 4326){
 
-  # error catching
+  # masking
+if(!is.null(data)){
+  lon <- data %>% mutate(lon = {{ lon }}) %>% select(lon)
+  lat <- data %>% mutate(lat = {{ lat }}) %>% select(lat)
+  if(!missing(group)){group <- data %>% mutate(group = {{ group }}) %>% select(group)}
+  }
 
-  lon <- data.frame(lon = lon)
-  lat <- data.frame(lat = lat)
+  if(is.null(data)){
+
+    lon <- data.frame(lon = lon)
+    lat <- data.frame(lat = lat)
+    if(!missing(group)){group <- data.frame(group = group)}
+  }
 
 
   if(!nrow(lon) == nrow(lat)) {stop("lat and lon are not the same length")}
@@ -141,7 +150,7 @@ batch_StreamStats <- function(lon, lat, group = NULL, crs = 4326){
 # delineateWatershed ----
   # Separate into whether group is null or not
 
-  if (is.null(group)){
+  if (missing(group)){
 
     usgs_raws <- cbind.data.frame(lat = lat, lon = lon, state = st, crs = crs)
 
@@ -150,8 +159,6 @@ batch_StreamStats <- function(lon, lat, group = NULL, crs = 4326){
      mutate(ws = map(data,~dl_ws(.)))
 
   } else {
-
-group <- data.frame(group = group)
 
 if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon")}
 
@@ -182,7 +189,7 @@ usgs_poly <- bundled_list$usgs_ws_polys  %>%
 if(is.null(group)){return(usgs_poly)}
 
 #if using groups let the user know which ones if any didn't parse
-if(nrow(filter(usgs_raws, !group %in% usgs_poly$group)) > 0) {print(paste0("This group was not generated: ", filter(usgs_raws, !group %in% usgs_poly$group) %>% select(group)))}
+if(nrow(filter(usgs_raws, !group %in% usgs_poly$group)) > 0) {print(paste0("Group(s) not generated: ", filter(usgs_raws, !group %in% usgs_poly$group) %>% select(group)))}
 
 
 return(usgs_poly)
@@ -197,9 +204,10 @@ return(usgs_poly)
 #' @title Batch USGS Regional Regression Estimates (RRE)
 #' @description Provides the USGS regressions from a \link[wildlandhydRo]{batch_StreamStats} object or manually entered params.
 #' Uses methods from \insertCite{ries2017streamstats}{wildlandhydRo} to generate RRE's.
+#' @param data A \code{data.frame} with \code{state and wkID} variables
 #' @param state An abbreviated State \code{character}, e.g. "MT"
 #' @param wkID A workspace ID generated in \link[wildlandhydRo]{batch_StreamStats}
-#' @param group A vector to group by
+#' @param group A vector to group by. \code{optional}
 #' @return Returns a data.frame with associated regional regression estimates.
 #' @examples \dontrun{
 #' # Bring in data
@@ -210,8 +218,8 @@ return(usgs_poly)
 #'
 #' #### Or use batch_StreamStats object
 #'
-#' data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
-#'                  Lon = c(-115.54327, -114.75546, -116.05935),
+#' data <- tibble(Lat = c(48.3060, 48.6293, 48.1494),
+#'                  Lon = c(-115.5432, -114.7554, -116.0593),
 #'                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
 #'
 #' three_sites <- batch_StreamStats(lon = data$Lon, lat = data$Lat, group = data$Site,
@@ -221,7 +229,7 @@ return(usgs_poly)
 #'
 #' }
 #' @importFrom Rdpack reprompt
-#' @importFrom dplyr select tibble
+#' @importFrom dplyr select tibble all_of
 #' @importFrom jsonlite fromJSON
 #' @importFrom httr GET write_disk
 #' @importFrom plyr rbind.fill
@@ -232,14 +240,25 @@ return(usgs_poly)
 #'
 
 
-batch_RRE <- function(state, wkID, group = NULL) {
+batch_RRE <- function(data = NULL, state, wkID, group) {
 
-  Name <- code <- Description <- Value <- Equation <- NULL
+# data masking
+
+if(!is.null(data)){
+  state <- data %>% sf::st_drop_geometry() %>% mutate(state = {{ state }}) %>% select(state)
+
+  wkID <- data %>% sf::st_drop_geometry() %>% mutate(wkID = {{ wkID }}) %>% select(wkID)
+if(!missing(group)){group <- data %>% sf::st_drop_geometry() %>% mutate(group = {{ group }}) %>% select(group)}
+} else {
 
   state <- data.frame(state = state)
   wkID <- data.frame(wkID = wkID)
+  if(!missing(group)){group <- data.frame(group = group)}
+}
 
   if(!nrow(state) == nrow(wkID)) {stop("wkID and state are not the same length")}
+
+  variables <- c( "Name", "code", "Description", "Value", "Equation")
 
   #if less than 1 ID then just run below code
 if (nrow(wkID) <= 1) {
@@ -261,7 +280,7 @@ if (nrow(wkID) <= 1) {
 
 
   peak <- (peak_s$RegressionRegions[[1]])[[6]][[1]] %>%
-    select(Name, code, Description, Value, Equation) #could change in future to be more dynamic
+    select(all_of(variables)) #could change in future to be more dynamic
 
 
 } else {
@@ -283,19 +302,28 @@ if (nrow(wkID) <= 1) {
                      httr::write_disk(path = file.path(tempdir(),
                                                        "peak_tmp.json"),overwrite = TRUE))
 
+  if (httr::http_error(error)) {
+    stop(sprintf("Downloading site %s failed, server is not responding or down.",
+                    group[i]))
+  }
 
   peak_s <- jsonlite::fromJSON(file.path(tempdir(),"peak_tmp.json"))
 
+
+
   peak_s <- (peak_s$RegressionRegions[[1]])[[6]][[1]] %>%
-    select(Name, code, Description, Value, Equation) #could change in future to be more dynamic
+    select(all_of(variables)) #could change in future to be more dynamic
 
    # what to name the groups if used
-if(is.null(group)){
+if(missing(group)){
+
   peak_s <- peak_s %>% mutate(group = paste0(i)) %>% as.data.frame()
+
 } else {
-  group <- data.frame(group = group)
+
   if(!nrow(group) == nrow(state)) {stop("group is not the same length as wkID or state")}
-  peak_s <- peak_s %>% mutate(group = paste(group[i,])) %>% as.data.frame()
+  peak_s <- peak_s %>% mutate(group = paste0(group[i,])) %>% as.data.frame()
+
   }
 
   #route into tibble()
@@ -320,9 +348,9 @@ if(is.null(group)){
 #' \insertCite{american1983handbook}{wildlandhydRo}. Right now, this is only good for western Montana so if data
 #' includes other states then they will be \strong{removed} from this analysis. In the future, possibly open for a more
 #' dynamic approach, e.g. (nationwide).
-#' @param rre A \link[wildlandhydRo]{batch_RRE} object
 #' @param ss A \link[wildlandhydRo]{batch_StreamStats} object
-#' @param bfw A vector of Bankfull Width's (BFW)
+#' @param rre A \link[wildlandhydRo]{batch_RRE} object. \code{optional}
+#' @param bfw A vector of Bankfull Width's (BFW). \code{optional}
 #' @param geo A geologic parameter, e.g. \code{0-1}
 #' @return Returns a data.frame with flood frequencies and culvert size estimations.
 #' @examples \dontrun{
@@ -343,18 +371,18 @@ if(is.null(group)){
 #' @export
 #'
 
-batch_culverts <- function(ss, rre = NULL, bfw = NULL,geo = 1) {
+batch_culverts <- function(ss, rre = NULL, bfw,geo = 1) {
 
 
 
-  if (is.null(bfw)) {
+  if (missing(bfw)) {
 
     ss <- ss %>% mutate(geo = geo)
 
   } else {
     bfw_test <- data.frame(bfw_test = bfw)
     if(!nrow(bfw_test) == nrow(ss)){stop("bfw is not the same length as ss")}
-    ss <- ss %>% mutate(bfw = bfw, geo = geo)
+    ss <- ss %>% mutate(bfw = {{ bfw }}, geo = geo)
   }
 
 
@@ -399,7 +427,7 @@ batch_culverts <- function(ss, rre = NULL, bfw = NULL,geo = 1) {
 
 
 
-    if (!is.null(bfw)) {
+    if (!missing(bfw)) {
 
       omp <- data.frame(ReturnInterval = c("2 Year Peak Flood", "25 Year Peak Flood", "50 Year Peak Flood", "100 Year Peak Flood"),
                         basin_char = c(0.037*(drain_area^0.95)*(precip_drain^1.52)*geo_known,
@@ -455,22 +483,14 @@ batch_culverts <- function(ss, rre = NULL, bfw = NULL,geo = 1) {
   }
   #culvert estimation function
 
-  culvert_size <- function(x) {
-    ifelse(x == 0, "(No Data)",
-           ifelse(x < 11 & x > 0, "(24 in)",
-                  ifelse(x >= 11 & x < 30,"(36 in)",
-                         ifelse(x >= 30 & x < 65,"(48 in)",
-                                ifelse(x >= 65 & x <110,"(60 in)",
-                                       ifelse(x >= 110 & x < 180,"(72 in)",
-                                              ifelse(x >= 180 & x < 290,"(84 in)",
-                                                     ifelse(x >= 290 & x < 400,"(96 in)","(Bridge or Big Culvert!)"))))))))}
+
   if(is.null(rre)) {
 
     together <- plyr::rbind.fill(Omang_parrett_hull_flows, parrett_and_johnson)
 
     together <- together %>% mutate(RI = parse_number(ReturnInterval))
 
-    if (is.null(bfw)) {
+    if (missing(bfw)) {
 
       together_long <- together %>% pivot_longer(cols = c("basin_char", "bankfull_width_regression"), names_to = "Method") %>%
         mutate(across(where(is.numeric), round, 0)) %>% mutate(Size = culvert_size(value))
@@ -503,7 +523,7 @@ batch_culverts <- function(ss, rre = NULL, bfw = NULL,geo = 1) {
 
 
 
-  if (is.null(bfw)) {
+  if (missing(bfw)) {
 
     together_long <- together %>% pivot_longer(cols = c("basin_char", "bankfull_width_regression"), names_to = "Method") %>%
       mutate(across(where(is.numeric), round, 0)) %>% mutate(Size = culvert_size(value))
@@ -516,3 +536,29 @@ batch_culverts <- function(ss, rre = NULL, bfw = NULL,geo = 1) {
   }
   return(together_long)
 }
+
+#' Culvert Size
+#'
+#' @description This function let's you enter any numeric vector of flows and returns recommended culvert
+#' sizes based on \insertCite{american1983handbook}{wildlandhydRo}.
+#' @param x A vector of \code{numeric} flows
+#'
+#' @return A \code{data.frame}
+#' @importFrom Rdpack reprompt
+#' @references {
+#' \insertAllCited{}
+#' }
+#' @export
+#'
+#' @examples
+culvert_size <- function(x) {
+
+
+  ifelse(x == 0, "(No Data)",
+         ifelse(x < 11 & x > 0, "(24 in)",
+                ifelse(x >= 11 & x < 30,"(36 in)",
+                       ifelse(x >= 30 & x < 65,"(48 in)",
+                              ifelse(x >= 65 & x <110,"(60 in)",
+                                     ifelse(x >= 110 & x < 180,"(72 in)",
+                                            ifelse(x >= 180 & x < 290,"(84 in)",
+                                                   ifelse(x >= 290 & x < 400,"(96 in)","(Bridge or Big Culvert!)"))))))))}

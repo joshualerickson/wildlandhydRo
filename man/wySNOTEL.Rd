@@ -4,12 +4,12 @@
 \alias{wySNOTEL}
 \title{Water Year Stats (SNOTEL)}
 \usage{
-wySNOTEL(sites = NULL, procDV = NULL)
+wySNOTEL(procDV, sites = NULL)
 }
 \arguments{
-\item{sites}{A vector of SNOTEL site locations, e.g. \code{c("311", "500")}}
+\item{procDV}{A previously created \link[wildlandhydRo]{proc_SNOTELdv} object. \code{recommended}}
 
-\item{procDV}{A previously created \link[wildlandhydRo]{proc_SNOTELdv} object}
+\item{sites}{A vector of SNOTEL site locations, e.g. \code{c("311", "500")}. \code{optional}}
 }
 \value{
 A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.

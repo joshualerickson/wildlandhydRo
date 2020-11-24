@@ -4,14 +4,16 @@
 \alias{batch_RRE}
 \title{Batch USGS Regional Regression Estimates (RRE)}
 \usage{
-batch_RRE(state, wkID, group = NULL)
+batch_RRE(data = NULL, state, wkID, group)
 }
 \arguments{
+\item{data}{A \code{data.frame} with \code{state and wkID} variables}
+
 \item{state}{An abbreviated State \code{character}, e.g. "MT"}
 
 \item{wkID}{A workspace ID generated in \link[wildlandhydRo]{batch_StreamStats}}
 
-\item{group}{A vector to group by}
+\item{group}{A vector to group by. \code{optional}}
 }
 \value{
 Returns a data.frame with associated regional regression estimates.
@@ -30,8 +32,8 @@ rre_peak <- batch_RRE(state = data$state, wkID = data$wkID)
 
 #### Or use batch_StreamStats object
 
-data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
-                 Lon = c(-115.54327, -114.75546, -116.05935),
+data <- tibble(Lat = c(48.3060, 48.6293, 48.1494),
+                 Lon = c(-115.5432, -114.7554, -116.0593),
                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
 
 three_sites <- batch_StreamStats(lon = data$Lon, lat = data$Lat, group = data$Site,

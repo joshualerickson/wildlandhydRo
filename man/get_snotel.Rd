@@ -4,7 +4,7 @@
 \alias{get_SNOTEL}
 \title{Get SNOTEL locations}
 \usage{
-get_SNOTEL(AOI = NULL)
+get_SNOTEL(AOI)
 }
 \arguments{
 \item{AOI}{A AOI object}

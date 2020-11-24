@@ -4,16 +4,16 @@
 \alias{proc_USGSdv}
 \title{Process USGS daily values}
 \usage{
-proc_USGSdv(
-  sites,
-  parameterCd = "00060",
-  start_date = "",
-  end_date = "",
-  statCd = "00003"
-)
+proc_USGSdv(sites, parameterCd = "00060", start_date = "", end_date = "")
 }
 \arguments{
 \item{sites}{A vector of USGS NWIS sites}
+
+\item{parameterCd}{A USGS code for metric, default is "00060".}
+
+\item{start_date}{A character of date format, e.g. \code{"1990-09-01"}}
+
+\item{end_state}{A character of date format, e.g. \code{"1990-09-01"}}
 }
 \value{
 A \code{data.frame} with daily mean flow and added meta-data.

@@ -9,12 +9,9 @@
 
 The goal of wildlandhydRo is to create wrapper functions around commonly
 used packages like [streamstats](https://github.com/markwh/streamstats),
-[nhdplusTools](https://github.com/USGS-R/nhdplusTools),
-[snotelr](https://github.com/bluegreen-labs/snotelr),[dataRetrieval](https://github.com/USGS-R/dataRetrieval)
-and [AOI](https://github.com/mikejohnson51/AOI) and provide accessible
-functions for culvert sizing, quick reports and EDA into extreme events.
-Mostly being able to batch (get more than one) in a more direct
-approach. Basically, a package for me but worth sharing with others.
+[snotelr](https://github.com/bluegreen-labs/snotelr) and
+[dataRetrieval](https://github.com/USGS-R/dataRetrieval). Basically, a
+package for me but worth sharing with others.
 
 ## Installation
 

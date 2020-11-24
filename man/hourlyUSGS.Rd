@@ -4,16 +4,21 @@
 \alias{hourlyUSGS}
 \title{Hourly USGS}
 \usage{
-hourlyUSGS(Sites = NULL, procDV = NULL, days = 7)
+hourlyUSGS(procDV, sites = NULL, days = 7)
 }
 \arguments{
-\item{days}{}
+\item{procDV}{A previously created \link[wildlandhydRo]{proc_USGSdv} object.}
+
+\item{sites}{A \code{vector} of USGS NWIS sites. \code{optional}}
+
+\item{days}{A \code{numeric} input of days.}
 }
 \value{
 
 }
 \description{
-Hourly USGS
+This function generates hourly NWIS flow data from \url{https://waterservices.usgs.gov/nwis/iv/}.
+It takes the instantaneous data and floors to 1-hour data by taking the mean.
 }
 \examples{
 

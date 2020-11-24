@@ -4,6 +4,9 @@
 #' @description This function is basically a wrapper around \link[dataRetrieval]{readNWISdv} but includes
 #' added variables like water year, lat/lon, station name, altitude and tidied dates.
 #' @param sites A vector of USGS NWIS sites
+#' @param parameterCd A USGS code for metric, default is "00060".
+#' @param start_date A character of date format, e.g. \code{"1990-09-01"}
+#' @param end_date A character of date format, e.g. \code{"1990-09-01"}
 #'
 #' @return A \code{data.frame} with daily mean flow and added meta-data.
 #' @export
@@ -16,7 +19,7 @@
 #'
 #'
 
-proc_USGSdv <- function(sites, parameterCd = "00060", start_date = "", end_date = "", statCd = "00003") {
+proc_USGSdv <- function(sites, parameterCd = "00060", start_date = "", end_date = "") {
 
 
 
@@ -35,7 +38,7 @@ proc_USGSdv <- function(sites, parameterCd = "00060", start_date = "", end_date 
                     readNWISsite(site_id_usgs$sites[[i]]) %>% select(station_nm) %>% as.character()))
 
   discharge <- readNWISdv(siteNumbers = site_id_usgs$sites[[i]], parameterCd = parameterCd,
-                          startDate = start_date, endDate = end_date, statCd = statCd) %>%
+                          startDate = start_date, endDate = end_date, statCd = "00030") %>%
     renameNWISColumns() %>%
     mutate(
       drainage_area = readNWISsite(site_id_usgs$sites[[i]]) %>% select(drain_area_va) %>% as.numeric(),
@@ -216,9 +219,11 @@ return(usgs_raw_min_max_month)
 
 
 #' Hourly USGS
-#'
-#' @param cleanDV
-#' @param days
+#' @description This function generates hourly NWIS flow data from \url{https://waterservices.usgs.gov/nwis/iv/}.
+#' It takes the instantaneous data and floors to 1-hour data by taking the mean.
+#' @param procDV A previously created \link[wildlandhydRo]{proc_USGSdv} object.
+#' @param sites A \code{vector} of USGS NWIS sites. \code{optional}
+#' @param days A \code{numeric} input of days.
 #'
 #' @return
 #' @export
@@ -230,32 +235,33 @@ return(usgs_raw_min_max_month)
 #'
 #' @examples
 #'
-hourlyUSGS <- function(Sites = NULL, procDV = NULL, days = 7) {
+hourlyUSGS <- function(procDV, sites = NULL, days = 7) {
 
   if(length(days) > 1){stop("only length 1 vector")}
-  if(!is.null(Sites) & !is.null(procDV)){stop("Can't use both Sites and procDV")}
+  if(!is.null(sites) & !missing(procDV)){stop("Can't use both Sites and procDV")}
+  if(is.null(sites) & missing(procDV)){stop("Need at least one argument!")}
 
   choice_days <- days
   #create iteration value
 
-  if(!is.null(procDV)){
+  if(!missing(procDV)){
 
   sites <- unique(procDV$site_no)
   station <- unique(procDV$Station)
 
   }
 
-  if(!is.null(Sites) & length(Sites) == 1){
+  if(!is.null(sites) & length(sites) == 1){
 
-    sites <- unique(Sites)
+    sites <- unique(sites)
 
     station <- readNWISsite(sites) %>% select(station_nm) %>% as.character()
 
     }
 
-  if(!is.null(Sites) & length(Sites) > 1) {
+  if(!is.null(sites) & length(sites) > 1) {
 
-      sites <- unique(Sites)
+      sites <- unique(sites)
 
       station <- vector()
     for(i in 1:length(sites)){

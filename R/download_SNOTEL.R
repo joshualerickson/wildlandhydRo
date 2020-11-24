@@ -180,24 +180,26 @@ proc_SNOTELdv <- function(sites) {
 #' Water Year Stats (SNOTEL)
 #' @description This function gets snotel data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. It generates
 #' the maximum and mean of snow water equivalent and snow depth per water year.
-#' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}
-#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object
+#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object. \code{recommended}
+#' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}. \code{optional}
 #'
 #' @return A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.
 #' @export
 #'
 #' @examples
-wySNOTEL <- function(sites = NULL, procDV = NULL) {
+wySNOTEL <- function(procDV, sites = NULL) {
 
-  if(!is.null(sites) & !is.null(procDV)){stop("Can't use both Sites and procDV")}
+  #error catching
+  if(!is.null(sites) & !missing(procDV)){stop("Can't use both Sites and procDV")}
+  if(is.null(sites) & missing(procDV)){stop("Need at least one argument!")}
 
-  if(!is.null(procDV)) {
+  if(!missing(procDV)) {
 
     meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
 
   } else {
 
-    meta_data <- meta_data[which(meta_data$site_id %in% Sites),]
+    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
 
 
   }
@@ -279,8 +281,8 @@ snotel_download_wy <- snotel_download_wy %>%
 #' Water Year & Monthly Stats (SNOTEL)
 #' @description This function gets snotel data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. It generates
 #' the maximum and mean of snow water equivalent and snow depth per water year per month.
-#' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}
-#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object
+#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object. \code{recommended}
+#' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}. \code{optional}
 #'
 #' @return A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.
 #' @export
@@ -290,17 +292,17 @@ snotel_download_wy <- snotel_download_wy %>%
 #' @importFrom lubridate as_date
 #'
 #' @examples
-wymSNOTEL <- function(sites = NULL, procDV = NULL) {
+wymSNOTEL <- function(procDV, sites = NULL) {
 
-  if(!is.null(sites) & !is.null(procDV)){stop("Can't use both Sites and procDV")}
-
-  if(!is.null(procDV)) {
+  if(!is.null(sites) & !missing(procDV)){stop("Can't use both Sites and procDV")}
+  if(is.null(sites) & missing(procDV)){stop("Need at least one argument!")}
+  if(!missing(procDV)) {
 
     meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
 
   } else {
 
-    meta_data <- meta_data[which(meta_data$site_id %in% Sites),]
+    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
 
 
   }
@@ -419,8 +421,9 @@ monthSNOTEL <- function(procDV) {
 
 #' Hourly SNOTEL
 #' @description This function gets hourly SNOTEL data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website.
-#' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}
+
 #' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object
+#' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}
 #' @param days A \code{numeric} input of days, e.g. 1 = 24 hrs.
 #' @importFrom httr GET write_disk http_error
 #' @importFrom plyr rbind.fill
@@ -430,18 +433,18 @@ monthSNOTEL <- function(procDV) {
 #' @export
 #'
 #' @examples
-hourlySNOTEL <- function(sites = NULL, procDV = NULL, days = 7) {
+hourlySNOTEL <- function(procDV, sites = NULL,  days = 7) {
 
   if(length(days) > 1){stop("only length 1 vector")}
-  if(!is.null(sites) & !is.null(procDV)){stop("Can't use both Sites and procDV")}
-
- if(!is.null(procDV)) {
+  if(!is.null(sites) & !missing(procDV)){stop("Can't use both Sites and procDV")}
+  if(is.null(sites) & missing(procDV)){stop("Need at least one argument!")}
+ if(!missing(procDV)) {
 
    meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
 
   } else {
 
-    meta_data <- meta_data[which(meta_data$site_id %in% Sites),]
+    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
 
 
     }
@@ -526,18 +529,19 @@ hourlySNOTEL <- function(sites = NULL, procDV = NULL, days = 7) {
 #' @importFrom readr read_csv
 #' @examples
 
-reportSNOTEL <- function(Sites = NULL, procDV = NULL, days = 7) {
+reportSNOTEL <- function(procDV, sites = NULL, days = 7) {
 
   if(length(days) > 1){stop("only length 1 vector")}
-  if(!is.null(Sites) & !is.null(procDV)){stop("Can't use both Sites and procDV")}
+  if(!is.null(sites) & !is.null(procDV)){stop("Can't use both Sites and procDV")}
+  if(is.null(sites) & missing(procDV)){stop("Need at least one argument!")}
 
-  if(!is.null(procDV)) {
+  if(!missing(procDV)) {
 
     meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
 
   } else {
 
-    meta_data <- meta_data[which(meta_data$site_id %in% Sites),]
+    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
 
 
   }
@@ -615,7 +619,7 @@ reportSNOTEL <- function(Sites = NULL, procDV = NULL, days = 7) {
 #' @return A \code{data.frame}
 #' @export
 #' @examples
-get_SNOTEL = function(AOI = NULL){
+get_SNOTEL = function(AOI){
 
   AOI_type <- sf::st_geometry_type(AOI)
 

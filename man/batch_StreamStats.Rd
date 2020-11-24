@@ -4,14 +4,16 @@
 \alias{batch_StreamStats}
 \title{Download Multiple Stream Stats Locations}
 \usage{
-batch_StreamStats(lon, lat, group = NULL, crs = 4326)
+batch_StreamStats(data = NULL, lon, lat, group, crs = 4326)
 }
 \arguments{
+\item{data}{A \code{data.frame} with \code{lon,lat} variables. \code{optional}}
+
 \item{lon}{A \code{numeric} vector of longitude values}
 
 \item{lat}{A \code{numeric} vector of latitude values}
 
-\item{group}{A vector to group by}
+\item{group}{A vector to group by. \code{optional}}
 
 \item{crs}{A \code{numeric} crs value}
 }

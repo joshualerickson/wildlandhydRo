@@ -4,14 +4,14 @@
 \alias{reportSNOTEL}
 \title{Snotel Report}
 \usage{
-reportSNOTEL(Sites = NULL, procDV = NULL, days = 7)
+reportSNOTEL(procDV, sites = NULL, days = 7)
 }
 \arguments{
 \item{procDV}{A previously created \link[wildlandhydRo]{proc_SNOTELdv} object}
 
-\item{days}{A \code{numeric} input for days}
-
 \item{sites}{A vector of SNOTEL site locations, e.g. \code{c("311", "500")}}
+
+\item{days}{A \code{numeric} input for days}
 }
 \value{
 A \code{data.frame}
