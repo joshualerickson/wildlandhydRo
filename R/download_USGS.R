@@ -114,7 +114,7 @@ wyUSGS <- function(procDV, sites = NULL) {
 
 if(missing(procDV)) {
 
-  usgs_raw <- proc_USGSdv(sites = sites) %>% mutate(Flow = ifelse(Flow <= 0 , Flow + 0.01, Flow))
+  usgs_raw <- batch_USGSdv(sites = sites) %>% mutate(Flow = ifelse(Flow <= 0 , Flow + 0.01, Flow))
 
 } else {
 
@@ -202,7 +202,7 @@ wymUSGS <- function(procDV, sites = NULL) {
 
   if(missing(procDV)) {
 
-    usgs_raw <- proc_USGSdv(sites = sites)
+    usgs_raw <- batch_USGSdv(sites = sites)
 
   } else {
 
@@ -252,7 +252,7 @@ monthUSGS <- function(procDV, sites = NULL) {
 
   if(missing(procDV)) {
 
-    usgs_raw <- proc_USGSdv(sites = sites)
+    usgs_raw <- batch_USGSdv(sites = sites)
 
   } else {
 
@@ -426,7 +426,7 @@ plot_baseflow <- function(procDV, sites = NULL, wy) {
 
   if(missing(procDV)) {
 
-    usgs_raw <- proc_USGSdv(sites = sites)
+    usgs_raw <- batch_USGSdv(sites = sites)
 
   } else {
 
