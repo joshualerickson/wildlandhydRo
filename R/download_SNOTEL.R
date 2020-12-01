@@ -621,7 +621,6 @@ reportSNOTELdv <- function(procDV, sites = NULL, days = 8) {
 
 reportSNOTELmv <- function(procDV, sites = NULL) {
 
-  if(length(days) > 1){stop("only length 1 vector")}
   if(!is.null(sites) & !missing(procDV)){stop("Can't use both Sites and procDV")}
   if(is.null(sites) & missing(procDV)){stop("Need at least one argument!")}
 
@@ -640,8 +639,6 @@ reportSNOTELmv <- function(procDV, sites = NULL) {
   if (nrow(meta_data) == 0){
     stop("no site found with the requested ID")
   }
-
-  choice_days <- days
 
   #create blank dataframe to store the information in
   snotel_report_month <- data.frame()
