@@ -7,7 +7,7 @@
 wymSNOTEL(procDV, sites = NULL)
 }
 \arguments{
-\item{procDV}{A previously created \link[wildlandhydRo]{proc_SNOTELdv} object. \code{recommended}}
+\item{procDV}{A previously created \link[wildlandhydRo]{batch_SNOTELdv} object. \code{recommended}}
 
 \item{sites}{A vector of SNOTEL site locations, e.g. \code{c("311", "500")}. \code{optional}}
 }

@@ -7,7 +7,7 @@
 hourlySNOTEL(procDV, sites = NULL, days = 7)
 }
 \arguments{
-\item{procDV}{A previously created \link[wildlandhydRo]{proc_SNOTELdv} object}
+\item{procDV}{A previously created \link[wildlandhydRo]{batch_SNOTELdv} object}
 
 \item{sites}{A vector of SNOTEL site locations, e.g. \code{c("311", "500")}}
 

@@ -7,7 +7,7 @@
 hourlyUSGS(procDV, sites = NULL, days = 7)
 }
 \arguments{
-\item{procDV}{A previously created \link[wildlandhydRo]{proc_USGSdv} object.}
+\item{procDV}{A previously created \link[wildlandhydRo]{batch_USGSdv} object.}
 
 \item{sites}{A \code{vector} of USGS NWIS sites. \code{optional}}
 

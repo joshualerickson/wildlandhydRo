@@ -4,15 +4,20 @@
 \alias{wymUSGS}
 \title{Water Year & Monthly Stats (USGS)}
 \usage{
-wymUSGS(procDV)
+wymUSGS(procDV, sites = NULL)
 }
 \arguments{
-\item{procDV}{A previously created \link[wildlandhydRo]{proc_USGSdv} object.}
+\item{procDV}{A previously created \link[wildlandhydRo]{batch_USGSdv} object.}
+
+\item{sites}{A \code{character} vector with NWIS site numbers.}
 }
 \value{
 A \code{data.frame}
 }
 \description{
-This function uses the results of the \link[wildlandhydRo]{proc_USGSdv} object to
-generate mean, maximum, median and standard deviation per water year per month.
+This function uses the results of the \link[wildlandhydRo]{batch_USGSdv} object to
+generate mean, maximum, median and standard deviation per water year per month. Also included is
+monthly base-flow and Base-flow Index (BFI) (total-flow/base-flow) from \link[lfstat]{baseflow}
+monthly coefficient of variance \code{sd of flow/mean of flow}. Again, the
+window for all the methods are monthly, e.g. 1. This leaves it up to the user to explore different windows if inclined.
 }

@@ -7,16 +7,12 @@
 monthSNOTEL(procDV)
 }
 \arguments{
-\item{procDV}{A previously created \link[wildlandhydRo]{proc_SNOTELdv} object}
+\item{procDV}{A previously created \link[wildlandhydRo]{batch_SNOTELdv} object}
 }
 \value{
 A data.frame
 }
 \description{
-This function uses a \link[wildlandhydRo]{proc_SNOTELdv} object to generate
+This function uses a \link[wildlandhydRo]{batch_SNOTELdv} object to generate
 month only statistics for snow water equivalent and snow depth.
-}
-\examples{
-
-
 }

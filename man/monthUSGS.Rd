@@ -4,16 +4,18 @@
 \alias{monthUSGS}
 \title{Month-Only Stats (USGS)}
 \usage{
-monthUSGS(procDV)
+monthUSGS(procDV, sites = NULL)
 }
 \arguments{
-\item{procDV}{A previously created \link[wildlandhydRo]{proc_USGSdv} object.}
+\item{procDV}{A previously created \link[wildlandhydRo]{batch_USGSdv} object.}
+
+\item{sites}{A \code{character} vector with NWIS site numbers.}
 }
 \value{
 A \code{data.frame}
 }
 \description{
-This function uses the results of the \link[wildlandhydRo]{proc_USGSdv} object to
+This function uses the results of the \link[wildlandhydRo]{batch_USGSdv} object to
 generate mean, maximum, median and standard deviation for month-only.
 }
 \examples{

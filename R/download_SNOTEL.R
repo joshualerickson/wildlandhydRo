@@ -108,7 +108,7 @@ snotel_report_custom <- function(df) {
 #' @export
 #'
 
-proc_SNOTELdv <- function(sites) {
+batch_SNOTELdv <- function(sites) {
 
 
   # download meta-data
@@ -180,7 +180,7 @@ proc_SNOTELdv <- function(sites) {
 #' Water Year Stats (SNOTEL)
 #' @description This function gets snotel data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. It generates
 #' the maximum and mean of snow water equivalent and snow depth per water year.
-#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object. \code{recommended}
+#' @param procDV A previously created \link[wildlandhydRo]{batch_SNOTELdv} object. \code{recommended}
 #' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}. \code{optional}
 #'
 #' @return A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.
@@ -281,7 +281,7 @@ snotel_download_wy <- snotel_download_wy %>%
 #' Water Year & Monthly Stats (SNOTEL)
 #' @description This function gets snotel data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. It generates
 #' the maximum and mean of snow water equivalent and snow depth per water year per month.
-#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object. \code{recommended}
+#' @param procDV A previously created \link[wildlandhydRo]{batch_SNOTELdv} object. \code{recommended}
 #' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}. \code{optional}
 #'
 #' @return A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.
@@ -389,15 +389,13 @@ wymSNOTEL <- function(procDV, sites = NULL) {
 }
 
 #' Month-Only Stats (SNOTEL)
-#' @description This function uses a \link[wildlandhydRo]{proc_SNOTELdv} object to generate
+#' @description This function uses a \link[wildlandhydRo]{batch_SNOTELdv} object to generate
 #' month only statistics for snow water equivalent and snow depth.
-#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object
+#' @param procDV A previously created \link[wildlandhydRo]{batch_SNOTELdv} object
 #'
 #' @return A data.frame
 #' @export
 #' @importFrom dplyr group_by summarise mutate relocate
-#'
-#' @examples
 #'
 #'
 
@@ -422,7 +420,7 @@ monthSNOTEL <- function(procDV) {
 #' Hourly SNOTEL
 #' @description This function gets hourly SNOTEL data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website.
 
-#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object
+#' @param procDV A previously created \link[wildlandhydRo]{batch_SNOTELdv} object
 #' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}
 #' @param days A \code{numeric} input of days, e.g. 1 = 24 hrs.
 #' @importFrom httr GET write_disk http_error
@@ -517,11 +515,11 @@ hourlySNOTEL <- function(procDV, sites = NULL,  days = 7) {
 }
 
 
-#' Snotel Report
-#' @description This function gets SNOTEL report data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. This includes
+#' Snotel Report Daily
+#' @description This function gets daily SNOTEL report data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. This includes
 #' percentage of median from 1981-2010. Also included is current years data and the previous years data as well.
 #' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}
-#' @param procDV A previously created \link[wildlandhydRo]{proc_SNOTELdv} object
+#' @param procDV A previously created \link[wildlandhydRo]{batch_SNOTELdv} object
 #' @param days A \code{numeric} input for days
 #'
 #' @return A \code{data.frame}
@@ -529,20 +527,20 @@ hourlySNOTEL <- function(procDV, sites = NULL,  days = 7) {
 #' @importFrom readr read_csv
 #' @examples
 
-reportSNOTEL <- function(procDV, sites = NULL, days = 7) {
+reportSNOTELdv <- function(procDV, sites = NULL, days = 8) {
 
   if(length(days) > 1){stop("only length 1 vector")}
-  if(!is.null(sites) & !is.null(procDV)){stop("Can't use both Sites and procDV")}
+  if(!is.null(sites) & !missing(procDV)){stop("Can't use both Sites and procDV")}
   if(is.null(sites) & missing(procDV)){stop("Need at least one argument!")}
 
-  if(!missing(procDV)) {
-
-    meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
-
-  } else {
+  if(missing(procDV)) {
 
     meta_data <- meta_data[which(meta_data$site_id %in% sites),]
 
+
+  } else {
+
+    meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
 
   }
 
@@ -610,6 +608,234 @@ reportSNOTEL <- function(procDV, sites = NULL, days = 7) {
 
 }
 
+#' Snotel Report Monthly
+#' @description This function gets monthly SNOTEL report data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. This includes
+#' percentage of median from 1981-2010. Also included is current years data and the previous years data as well.
+#' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}
+#' @param procDV A previously created \link[wildlandhydRo]{batch_SNOTELdv} object
+#'
+#' @return A \code{data.frame}
+#' @export
+#' @importFrom readr read_csv
+#' @examples
+
+reportSNOTELmv <- function(procDV, sites = NULL) {
+
+  if(length(days) > 1){stop("only length 1 vector")}
+  if(!is.null(sites) & !missing(procDV)){stop("Can't use both Sites and procDV")}
+  if(is.null(sites) & missing(procDV)){stop("Need at least one argument!")}
+
+  if(missing(procDV)) {
+
+    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
+
+
+  } else {
+
+    meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
+
+  }
+
+  # check if the provided site index is valid
+  if (nrow(meta_data) == 0){
+    stop("no site found with the requested ID")
+  }
+
+  choice_days <- days
+
+  #create blank dataframe to store the information in
+  snotel_report_month <- data.frame()
+
+  #run for loop over api, pulling necessary data.
+
+  for (i in 1:nrow(meta_data)){
+    # loop over selection, and download the data
+
+    tryCatch({
+
+      # some feedback on the download progress
+      message(sprintf("Downloading site: %s, with id: %s\n",
+                      meta_data$site_id[i],
+                      meta_data$site_name[i]))
+      # download url (metric by default!)
+      base_url <- paste0(
+        "https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customMultiTimeSeriesGroupByStationReport/monthly/start_of_period/",
+        meta_data$site_id[i], ":",
+        meta_data$state[i], ":",
+        meta_data$network[i],
+        "%7Cid=%22%22%7Cname/POR_BEGIN,POR_END/WTEQ::pctOfMedian_1981,WTEQ::value,WTEQ::prevValue,SNWD::value,SNWD::prevValue"
+      )
+
+      # try to download the data
+      error <- httr::GET(url = base_url,
+                         httr::write_disk(path = file.path(tempdir(),
+                                                           "snotel_tmp.csv"),
+                                          overwrite = TRUE))
+
+      # catch error and remove resulting zero byte files
+      if (httr::http_error(error)) {
+        warning(sprintf("Downloading site %s failed, removed empty file.",
+                        meta_data$site_id[i]))
+      }
+
+      # read in the snotel data
+      df <- readr::read_csv(file.path(tempdir(),"snotel_tmp.csv"),comment = "#", col_types = cols())
+
+      # subsitute column names
+      df <- snotel_report_custom(df)
+
+      df <- cbind.data.frame(meta_data[i,c(3,4,11)], df, row.names = NULL)
+
+      #combine df with blank dataframe (usgs_download_hourly)
+
+      snotel_report_month <- plyr::rbind.fill(snotel_report_month, df)
+
+
+    }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+
+  }
+
+  snotel_report_month <- snotel_report_month  %>%
+    mutate(year = str_extract(date, "(\\d+)"),
+           year = str_remove(year, " "),
+           month = str_extract(date, "(\\D+)"),
+           month = str_remove(month, " "),
+           day = 1,
+           Date = str_c(year,month,day, sep = "-"),
+           Date = as_date(Date),
+           wy = smwrBase::waterYear(Date,numeric = TRUE))
+
+  return(snotel_report_month)
+
+}
+#' Plot SNOTEL Report
+#'
+#' @param report A previously created \link[wildlandhydRo]{batch_SNOTELdv} object
+#' @param time A string ("month", "daily") indicating what time frame to plot.
+#' @param type A string ("per", "now", "all") indicating what type of plot.
+#' @return
+#' @importFrom stringr str_replace_all
+#' @export
+#'
+
+plot_reportSNOTEL <- function(report, time = "daily", type = "per") {
+
+  if (time == "daily") {
+  if(is.null(type))stop({"Need a type argument."})
+
+  if(type == "per"){
+
+    report %>%
+      mutate(site_name = fct_reorder(site_name, swe_percent_median)) %>%
+      ggplot(aes(site_name, swe_percent_median, color = site_name)) +
+      geom_col(show.legend = FALSE, fill = "white") +
+      geom_point(size = 3) +
+      geom_hline(yintercept = 100, linetype = 2, size = 1.3) +
+      coord_flip() +
+      theme_bw() + theme(strip.text = element_text(size = 8.5)) +
+      labs(x = "Percent of Median",color = "Site Name",
+           title = "Daily Snow Water Equivalent (SWE) Percent of Median") +
+      facet_wrap(~date, scales = "free")
+
+  } else if (type == "now") {
+
+    report %>%
+      mutate(site_name = fct_reorder(site_name, swe_percent_median)) %>%
+      pivot_longer(cols = c(swe_current, swe_prev_year, snow_current, snow_prev_year), names_to = "stat") %>%
+      mutate(stat = str_replace_all(stat, "_", " ")) %>%
+      ggplot() + geom_col(aes(stat, value, fill = site_name), position = "dodge") +
+      coord_flip() +
+      theme_bw() + theme(strip.text = element_text(size = 8.5)) +
+      labs(x = "Statistic Value", title = "Summary Statistics per Site") +
+      facet_wrap(~date, scales = "free")
+
+  } else if (type == "all") {
+
+    g1 <-  report %>%
+      mutate(site_name = fct_reorder(site_name, swe_percent_median)) %>%
+      ggplot(aes(site_name, swe_percent_median, color = site_name)) +
+    geom_col(show.legend = FALSE, fill = "white") +
+      geom_point(size = 3) +
+    geom_hline(yintercept = 100, linetype = 2) +
+    coord_flip() +
+    theme_bw() + theme(strip.text = element_text(size = 8.5)) +
+    labs(x = "Statistic Value", color = "Site Name",
+         title = "Summary Statistics per Site") +
+    facet_wrap(~date, scales = "free")
+
+ g2 <- report %>%
+   mutate(site_name = fct_reorder(site_name, swe_percent_median)) %>%
+   pivot_longer(cols = c(swe_current, swe_prev_year, snow_current, snow_prev_year), names_to = "stat") %>%
+   mutate(stat = str_replace_all(stat, "_", " ")) %>%
+   ggplot() + geom_col(aes(stat, value, fill = site_name), position = "dodge") +
+   coord_flip() +
+   theme_bw() + theme(strip.text = element_text(size = 8.5)) +
+   labs(x = "Statistic Value", title = "", fill = "Site Name") +
+   facet_wrap(~date, scales = "free")
+
+ ggpubr::ggarrange(g1, g2, common.legend = TRUE)
+
+  }
+
+  } else if (time == "month") {
+
+    if(type == "per"){
+      year_low <- max(report$wy)-8
+      report %>% mutate(month = factor(month, levels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar",
+                                                "Apr", "May", "Jun", "Jul", "Aug", "Sep"))) %>%
+        filter(wy %in% year_low:max(report$wy)) %>%
+        ggplot(aes(month, swe_percent_median)) +
+        geom_col(aes(fill = site_name), position = "dodge")+
+        geom_hline(yintercept = 100) +
+        theme_bw() + theme(strip.text = element_text(size = 8.5)) +
+        labs(x = "Month", y = "SWE Percent of Median", title = "Start of Month SWE Percent of Median", fill = "Site Name") +
+        facet_wrap(~wy)
+
+    } else if (type == "now") {
+
+      report %>%
+        mutate(month = factor(month, levels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar",
+                                                "Apr", "May", "Jun", "Jul", "Aug", "Sep"))) %>%
+        pivot_longer(cols = c(swe_current, swe_prev_year, snow_current, snow_prev_year), names_to = "stat") %>%
+        filter(wy %in% max(report$wy)) %>%
+        ggplot(aes(month, value, fill = stat, group = stat)) +
+        theme_bw() + theme(strip.text = element_text(size = 8.5)) +
+        labs(x = "Month", y = "SWE", title = "Start of Month SWE/Snow Current and Previous Value", fill = "Metric") +
+        geom_col(position = 'dodge') + facet_wrap(~site_name, scales = "free")
+
+    } else if (type == "all") {
+      year_low <- max(report$wy)-8
+      g1 <-  report %>%
+        mutate(month = factor(month, levels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar",
+                                                "Apr", "May", "Jun", "Jul", "Aug", "Sep"))) %>%
+        filter(wy %in% year_low:max(report$wy)) %>%
+        ggplot(aes(month, swe_percent_median)) +
+        geom_col(aes(fill = site_name), position = "dodge")+
+        geom_hline(yintercept = 100) +
+        theme_bw() + theme(strip.text = element_text(size = 8.5)) +
+        labs(x = "Month", y = "SWE Percent of Median", title = "Start of Month SWE Percent of Median", fill = "Site Name") +
+        facet_wrap(~wy)
+
+      g2 <-
+
+        report %>%
+        mutate(month = factor(month, levels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar",
+                                                "Apr", "May", "Jun", "Jul", "Aug", "Sep"))) %>%
+        pivot_longer(cols = c(swe_current, swe_prev_year, snow_current, snow_prev_year), names_to = "stat") %>%
+        filter(wy %in% max(report$wy)) %>%
+        ggplot(aes(month, value, fill = stat, group = stat)) +
+        theme_bw() + theme(strip.text = element_text(size = 8.5)) +
+        labs(x = "Month", y = "SWE", title = "Start of Month SWE/Snow Current and Previous Value", fill = "Metric") +
+        geom_col(position = 'dodge') + facet_wrap(~site_name, scales = "free")
+
+
+      ggpubr::ggarrange(g1, g2, legend = 'bottom')
+
+    }
+
+}
+
+}
 
 #' Get SNOTEL locations
 #' @description A function that locates the nearest SNOTEL station and returns a sf object. This function only works with

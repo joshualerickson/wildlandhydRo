@@ -4,17 +4,21 @@
 \alias{wyUSGS}
 \title{Water Year Stats (USGS)}
 \usage{
-wyUSGS(procDV)
+wyUSGS(procDV, sites = NULL)
 }
 \arguments{
-\item{procDV}{A previously created \link[wildlandhydRo]{proc_USGSdv} object.}
+\item{procDV}{A previously created \link[wildlandhydRo]{batch_USGSdv} object.}
+
+\item{sites}{A \code{character} vector with NWIS site numbers.}
 }
 \value{
 
 }
 \description{
-This function uses the results of the \link[wildlandhydRo]{proc_USGSdv} object to
+This function uses the results of the \link[wildlandhydRo]{batch_USGSdv} object to
 generate mean, maximum, median and standard deviation per water year. It also includes peaks from
-\link[dataRetrieval]{readNWISpeak} and normalization
-by \code{log(Flow)/log(drainage area)} and \code{log(Flow)/log(all time mean flow)}.
+\link[dataRetrieval]{readNWISpeak}; annual base-flow and Base-flow Index (BFI) (total-flow/base-flow) from \link[lfstat]{baseflow}
+ ; annual coefficient of variance \code{sd of flow/mean of flow}; and normalization methods
+\code{Flow/drainage area}, \code{Flow/(all time mean flow)} and \code{Flow/log(standard deviation)}. The
+window for all the methods are annual, e.g. 1. This leaves it up to the user to explore different windows if inclined.
 }
