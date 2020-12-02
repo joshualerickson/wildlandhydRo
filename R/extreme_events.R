@@ -371,7 +371,7 @@ plot_allDist <- function(procDist) {
 #'
 #'
 #' @return A \code{data.frame}
-#' @importFrom fitdistrplus gofstat
+#' @importFrom fitdistrplus gofstat fitdist
 #' @export
 #'
 #'
@@ -414,3 +414,69 @@ plot_reportDist <- function(report) {
     labs(x = "Statistic Value", title = "Summary Statistics per Distribution") +
     facet_wrap(~stat, scales = "free")
 }
+
+
+#' Get Reoccurrence Intervals
+#'
+#' @param freqDV A previously create \link[wildlandhydRo]{batch_frequency} object.
+#' @param values A \code{numeric} vector
+#' @param distr Distribution from a batch_frequency object, see notes.
+#' @param RI A \code{numeric} vector. default is \code{NULL}
+#'
+#' @return A tibble print out and ggplot graph.
+#' @importFrom scales comma
+#' @export
+#' @note The distributions that are acceptable: "Gumbel", "LogPearson", "GEV", "Normal", "Lognormal", "Pearson", "Weibull".
+get_RI <- function(freqDV, values, distr, RI = NULL) {
+
+
+  if(is.null(RI)){
+
+    RI_dist <- freqDV %>% filter(Distribution == {{ distr }})
+
+    l1 <- loess(ReturnInterval~Value, data = RI_dist, span = 0.3)
+
+    #get values
+
+    pred <- predict(l1, newdata = {{ values }})
+    pred <- data.frame(ReturnInterval = pred, Value = {{ values }})
+
+    plot_pred <- RI_dist  %>% ggplot(aes(ReturnInterval, Value)) +
+      geom_smooth(span = 0.3, method = 'loess') +
+      geom_point(data = pred %>% na.omit(), aes(ReturnInterval, Value), col = "red", size = 2) +
+      ggrepel::geom_label_repel(data = pred %>% na.omit(),
+                                aes(label = paste(Value, " ~ ",
+                                                  scales::comma(round(ReturnInterval, 0), 1), " yr")), force = 5) +
+                                  theme_bw() +
+                                  labs(x = "Return Interval", y = "Value",
+                                       title = paste0("Return Interval from a ", {{ distr }}, " Distribution"))
+
+                                print(tibble(pred))
+                                plot_pred
+
+  } else {
+
+    RI_dist <- freqDV %>% filter(Distribution == {{ distr }})
+
+    l1 <- loess(Value~ReturnInterval, data = RI_dist, span = 0.3)
+
+    #get values
+
+    pred <- predict(l1, newdata = {{ RI }})
+    pred <- data.frame(Value = pred, ReturnInterval = {{ RI }})
+
+    plot_pred <- RI_dist  %>% ggplot(aes(ReturnInterval, Value)) +
+      geom_smooth(method = 'loess', span = 0.3) +
+      geom_point(data = pred %>% na.omit(), aes(ReturnInterval, Value), col = "red", size = 2) +
+      ggrepel::geom_label_repel(data = pred %>% na.omit(),
+                                aes(label = paste0(ReturnInterval, " yr ~ ",
+                                                   scales::comma(round(Value, 0), 1))), force = 5) +
+      theme_bw() +
+      labs(x = "Return Interval", y = "Value",
+           title = paste0("Return Interval from a ", {{ distr }}, " Distribution"))
+
+    print(tibble(pred))
+    plot_pred
+  }
+}
+
