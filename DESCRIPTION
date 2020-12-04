@@ -21,7 +21,7 @@ Imports: Rdpack, dplyr, tidyr, magrittr,
           scales, zoo, forcats
 Remotes: 
          mikejohnson51/AOI, 
-         markwh/streamstats
+         markwh/streamstats,
          USGS-R/smwrBase
 Suggests: 
     knitr,
