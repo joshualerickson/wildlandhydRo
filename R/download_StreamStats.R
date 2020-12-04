@@ -130,7 +130,8 @@ if(!is.null(data)){
 
     lon <- data.frame(lon = lon)
     lat <- data.frame(lat = lat)
-    if(!missing(group)){group <- data.frame(group = group)}
+    if(!missing(group)){group <- data.frame(group = {{ group }})}
+    if(missing(group)){group <- data.frame(group = dplyr::row_number())}
   }
 
 
@@ -205,7 +206,7 @@ return(usgs_poly)
 #' @title Batch USGS Regional Regression Estimates (RRE)
 #' @description Provides the USGS regressions from a \link[wildlandhydRo]{batch_StreamStats} object or manually entered params.
 #' Uses methods from \insertCite{ries2017streamstats}{wildlandhydRo} to generate RRE's.
-#' @param data A \code{data.frame} with \code{state and wkID} variables
+#' @param data A \link[wildlandhydro]{batch_StreamStats} with \code{state and wkID} variables
 #' @param state An abbreviated State \code{character}, e.g. "MT"
 #' @param wkID A workspace ID generated in \link[wildlandhydRo]{batch_StreamStats}
 #' @param group A vector to group by. \code{optional}
@@ -254,7 +255,8 @@ if(!missing(group)){group <- data %>% sf::st_drop_geometry() %>% mutate(group = 
 
   state <- data.frame(state = state)
   wkID <- data.frame(wkID = wkID)
-  if(!missing(group)){group <- data.frame(group = group)}
+  if(!missing(group)){group <- data.frame(group = {{ group }})}
+  if(missing(group)){group <- data.frame(group = dplyr::row_number())}
 }
 
   if(!nrow(state) == nrow(wkID)) {stop("wkID and state are not the same length")}
@@ -281,7 +283,9 @@ if (nrow(wkID) <= 1) {
 
 
   peak <- (peak_s$RegressionRegions[[1]])[[6]][[1]] %>%
-    select(all_of(variables)) #could change in future to be more dynamic
+    select(all_of(variables)) %>%
+    mutate(group = {{ group }}) %>%
+    as.data.frame() #could change in future to be more dynamic
 
 
 } else {

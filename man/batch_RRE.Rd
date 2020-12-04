@@ -7,7 +7,7 @@
 batch_RRE(data = NULL, state, wkID, group)
 }
 \arguments{
-\item{data}{A \code{data.frame} with \code{state and wkID} variables}
+\item{data}{A \link[wildlandhydro]{batch_StreamStats} with \code{state and wkID} variables}
 
 \item{state}{An abbreviated State \code{character}, e.g. "MT"}
 

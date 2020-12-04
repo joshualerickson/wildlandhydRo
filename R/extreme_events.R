@@ -120,6 +120,21 @@ batch_frequency <- function(data, value) {
 #'
 batch_distribution <- function(data, value) {
 
+#use internal functions so fitdist can find these functions without attaching the package.
+  dpearsonIII <- dpearsonIII()
+  qpearsonIII <- qpearsonIII()
+  ppearsonIII <- ppearsonIII()
+  dlpearsonIII <- dlpearsonIII()
+  qlpearsonIII <- qlpearsonIII()
+  plpearsonIII <- plpearsonIII()
+  dgev <- dgev()
+  qgev <- qgev()
+  pgev <- pgev()
+  dgumbel <- dgumbel()
+  qgumbel <- qgumbel()
+  pgumbel <- pgumbel()
+
+
 
   if(missing(data)){
 
