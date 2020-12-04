@@ -75,7 +75,7 @@ batch_USGSdv <- function(sites, parameterCd = "00060", start_date = "", end_date
            month = month(Date),
            day = day(Date),
            month_day = str_c(month, day, sep = "-"),
-           wy = smwrBase::waterYear(Date, TRUE),
+           wy = waterYear(Date, TRUE),
            month_abb = factor(month.abb[month], levels = month.abb),
            month_day = str_c(month, day, sep = "-"))
 
@@ -102,7 +102,6 @@ return(usgs_raw_dv)
 #' @importFrom lubridate year month day
 #' @importFrom dplyr mutate filter group_by summarise slice_head ungroup everything row_number n
 #' @importFrom stringr str_c str_remove_all
-#' @importFrom smwrBase waterYear
 #' @importFrom stats median sd
 #' @importFrom lfstat baseflow
 #'
@@ -168,7 +167,7 @@ for (i in 1:nrow(peak_sites)) {
   peak <- tryCatch({dataRetrieval::readNWISpeak(peak_sites$peaks[[i]]) %>%
                             select(peak_va, peak_dt, site_no)}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
   peak <- peak %>%
-            mutate(wy = smwrBase::waterYear(peak_dt, TRUE))
+            mutate(wy = waterYear(peak_dt, TRUE))
 
   peaks <- plyr::rbind.fill(peaks, peak)
 

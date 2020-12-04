@@ -381,7 +381,7 @@ wymSNOTEL <- function(procDV, sites = NULL) {
              day = 1,
              Date = str_c(year,month,day, sep = "-"),
              Date = as_date(Date),
-             wy = smwrBase::waterYear(Date,numeric = TRUE))
+             wy = waterYear(Date,numeric = TRUE))
   }
 
   return(snotel_download_wym)
@@ -700,7 +700,7 @@ reportSNOTELmv <- function(procDV, sites = NULL) {
            day = 1,
            Date = str_c(year,month,day, sep = "-"),
            Date = as_date(Date),
-           wy = smwrBase::waterYear(Date,numeric = TRUE))
+           wy = waterYear(Date,numeric = TRUE))
 
   return(snotel_report_month)
 

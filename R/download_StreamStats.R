@@ -364,7 +364,7 @@ if(missing(group)){
 #' @importFrom readr parse_number
 #' @importFrom tidyr pivot_longer
 #' @importFrom dplyr across filter mutate select
-#' @importFrom ape where
+#' @imortFrom ape where
 #' @importFrom plyr rbind.fill
 #' @references {
 #' \insertAllCited{}
