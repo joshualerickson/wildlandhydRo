@@ -16,12 +16,13 @@ Imports: Rdpack, dplyr, tidyr, magrittr,
           plyr, readr, sf, jsonlite, httr, 
           purrr, geojsonsf, AOI, streamstats,
           dataRetrieval, stringr, ape, ggrepel,
-          lubridate, stats, extRemes,
+          lubridate, stats, extRemes, evd, smwrBase,
           lfstat, ggplot2, ggpubr, fitdistrplus,
-          scales, psych, zoo, forcats
+          scales, zoo, forcats
 Remotes: 
          mikejohnson51/AOI, 
          markwh/streamstats
+         USGS-R/smwrBase
 Suggests: 
     knitr,
     rmarkdown,
