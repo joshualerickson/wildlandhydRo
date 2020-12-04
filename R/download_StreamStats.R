@@ -131,7 +131,7 @@ if(!is.null(data)){
     lon <- data.frame(lon = lon)
     lat <- data.frame(lat = lat)
     if(!missing(group)){group <- data.frame(group = {{ group }})}
-    if(missing(group)){group <- data.frame(group = dplyr::row_number())}
+    if(missing(group)){group <- data.frame(group = 1)}
   }
 
 
