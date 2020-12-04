@@ -382,12 +382,12 @@ batch_culverts <- function(ss, rre = NULL, bfw,geo = 1) {
 
   if (missing(bfw)) {
 
-    ss <- ss %>% mutate(geo = geo)
+    ss <- ss %>% mutate(geo = {{ geo }})
 
   } else {
-    bfw_test <- data.frame(bfw_test = bfw)
+    bfw_test <- data.frame(bfw_test = {{ bfw }})
     if(!nrow(bfw_test) == nrow(ss)){stop("bfw is not the same length as ss")}
-    ss <- ss %>% mutate(bfw = {{ bfw }}, geo = geo)
+    ss <- ss %>% mutate(bfw = {{ bfw }}, geo = {{ geo }})
   }
 
 
@@ -509,16 +509,10 @@ batch_culverts <- function(ss, rre = NULL, bfw,geo = 1) {
   } else {
   culvert_usgs <- rre
 
-  if (is.null(culvert_usgs)) {
-
-    culvert_usgs <- data.frame(ReturnInterval = c("2 Year Peak Flood", "25 Year Peak Flood", "50 Year Peak Flood", "100 Year Peak Flood"),
-                               basin_char = rep(0), source = "USGS Regression", group = rre$group)
-
-  } else {
-
     culvert_usgs <- culvert_usgs %>% select(basin_char = Value, ReturnInterval = Name) %>%
       mutate(source = "USGS Regression", group = rre$group) %>% dplyr::filter(ReturnInterval %in% c("2 Year Peak Flood", "25 Year Peak Flood",
-                                                                                             "50 Year Peak Flood", "100 Year Peak Flood"))}
+                                                                                             "50 Year Peak Flood", "100 Year Peak Flood"))
+    }
 
   culvert_usgs <- culvert_usgs %>% dplyr::filter(group %in% ss$group)
 
@@ -538,7 +532,7 @@ batch_culverts <- function(ss, rre = NULL, bfw,geo = 1) {
       mutate(across(where(is.numeric), round, 0)) %>% mutate(Size = culvert_size(value))
 
   }
-  }
+
   return(together_long)
 }
 
