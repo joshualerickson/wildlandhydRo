@@ -43,7 +43,7 @@ waterYear <- function(x, numeric=FALSE) {
 #'Elements of x, q, or p that are missing will result in missing values in the
 #'returned data.
 #'
-#' @rdname LogPearsonIII
+#' LogPearsonIII
 #' @aliases LogPearsonIII dlpearsonIII plpearsonIII qlpearsonIII rlpearsonIII
 #' @param x,q vector of quantiles.
 #' @param p vector of probabilities.
@@ -71,19 +71,19 @@ dlpearsonIII <- function(x, meanlog = 0, sdlog = 1, skew = 0) {
   return(ifelse(x == 0, 0, retval))
 }
 
-#' @rdname LogPearsonIII
+#' LogPearsonIII
 
 plpearsonIII <- function(q, meanlog = 0, sdlog = 1, skew = 0) {
   return(ppearsonIII(log(q), meanlog, sdlog, skew))
 }
 
-#' @rdname LogPearsonIII
+#' LogPearsonIII
 
 qlpearsonIII <- function(p, meanlog = 0, sdlog = 1, skew = 0) {
   return(exp(qpearsonIII(p, meanlog, sdlog, skew)))
 }
 
-#' @rdname LogPearsonIII
+#' LogPearsonIII
 
 rlpearsonIII <- function(n, meanlog = 0, sdlog = 1, skew = 0) {
   return(exp(rpearsonIII(n, meanlog, sdlog, skew)))
@@ -97,7 +97,7 @@ rlpearsonIII <- function(n, meanlog = 0, sdlog = 1, skew = 0) {
 #'Elements of \code{x}, \code{q}, or \code{p} that are missing will result in
 #'missing values in the returned data.
 #'
-#' @rdname PearsonIII
+#' PearsonIII
 #' @aliases PearsonIII dpearsonIII ppearsonIII qpearsonIII rpearsonIII
 #' @param x,q vector of quantiles. Missing values are permitted and result in
 #'corresponding missing values in the output.
@@ -156,7 +156,7 @@ dpearsonIII <- function(x, mean = 0, sd = 1, skew = 0) {
   return(rets)
 }
 
-#' @rdname PearsonIII
+#' PearsonIII
 
 ppearsonIII <- function(q, mean = 0, sd = 1, skew = 0) {
   ## the Pearson Type III distribution is simply a generalized gamma distribution
@@ -187,7 +187,7 @@ ppearsonIII <- function(q, mean = 0, sd = 1, skew = 0) {
   return(rets)
 }
 
-#' @rdname PearsonIII
+#' PearsonIII
 
 qpearsonIII <- function(p, mean = 0, sd = 1, skew = 0) {
   ## the Pearson Type III distribution is simply a generalized gamma distribution
@@ -213,7 +213,7 @@ qpearsonIII <- function(p, mean = 0, sd = 1, skew = 0) {
   return(rets * sd + mean)
 }
 
-#' @rdname PearsonIII
+#' PearsonIII
 #' @importFrom stats dgamma pgamma qgamma rnorm rgamma
 
 rpearsonIII <- function(n, mean = 0, sd = 1, skew = 0) {
