@@ -131,7 +131,6 @@ if(!is.null(data)){
     lon <- data.frame(lon = lon)
     lat <- data.frame(lat = lat)
     if(!missing(group)){group <- data.frame(group = {{ group }})}
-    if(missing(group)){group <- data.frame(group = 1)}
   }
 
 
@@ -156,7 +155,7 @@ if(!is.null(data)){
 
     usgs_raws <- cbind.data.frame(lat = lat, lon = lon, state = st, crs = crs)
 
-   watersheds <-  usgs_raws %>% mutate(group = row_number()) %>% group_by(group) %>%
+   watersheds <-  usgs_raws %>% mutate(group = dplyr::row_number()) %>% dplyr::group_by(group) %>%
      nest() %>%
      mutate(ws = map(data,~dl_ws(.)))
 
@@ -188,7 +187,7 @@ usgs_poly <- bundled_list$usgs_ws_polys  %>%
 
 # return usgs_poly if not using groups
 
-if(is.null(group)){return(usgs_poly)}
+if(missing(group)){return(usgs_poly)}
 
 #if using groups let the user know which ones if any didn't parse
 if(nrow(filter(usgs_raws, !group %in% usgs_poly$group)) > 0) {print(paste0("Group(s) not generated: ", filter(usgs_raws, !group %in% usgs_poly$group) %>% select(group)))}
@@ -242,21 +241,22 @@ return(usgs_poly)
 #'
 
 
-batch_RRE <- function(data = NULL, state, wkID, group) {
+batch_RRE <- function(data, state, wkID, group) {
 
 # data masking
 
-if(!is.null(data)){
+if(!missing(data)){
   state <- data %>% sf::st_drop_geometry() %>% mutate(state = {{ state }}) %>% select(state)
 
   wkID <- data %>% sf::st_drop_geometry() %>% mutate(wkID = {{ wkID }}) %>% select(wkID)
-if(!missing(group)){group <- data %>% sf::st_drop_geometry() %>% mutate(group = {{ group }}) %>% select(group)}
+group <- data %>% sf::st_drop_geometry() %>% mutate(group = {{ group }}) %>% select(group)
+
+
 } else {
 
   state <- data.frame(state = state)
   wkID <- data.frame(wkID = wkID)
-  if(!missing(group)){group <- data.frame(group = {{ group }})}
-  if(missing(group)){group <- data.frame(group = dplyr::row_number())}
+  group <- data.frame(group = group)
 }
 
   if(!nrow(state) == nrow(wkID)) {stop("wkID and state are not the same length")}
@@ -284,7 +284,7 @@ if (nrow(wkID) <= 1) {
 
   peak <- (peak_s$RegressionRegions[[1]])[[6]][[1]] %>%
     select(all_of(variables)) %>%
-    mutate(group = {{ group }}) %>%
+    mutate(group = group) %>%
     as.data.frame() #could change in future to be more dynamic
 
 
@@ -320,16 +320,9 @@ if (nrow(wkID) <= 1) {
     select(all_of(variables)) #could change in future to be more dynamic
 
    # what to name the groups if used
-if(missing(group)){
-
-  peak_s <- peak_s %>% mutate(group = paste0(i)) %>% as.data.frame()
-
-} else {
 
   if(!nrow(group) == nrow(state)) {stop("group is not the same length as wkID or state")}
   peak_s <- peak_s %>% mutate(group = paste0(group[i,])) %>% as.data.frame()
-
-  }
 
   #route into tibble()
 
@@ -376,7 +369,7 @@ if(missing(group)){
 #' @export
 #'
 
-batch_culverts <- function(ss, rre = NULL, bfw,geo = 1) {
+batch_culverts <- function(ss, rre, bfw,geo = 1) {
 
 
 
@@ -411,7 +404,7 @@ batch_culverts <- function(ss, rre = NULL, bfw,geo = 1) {
 
     precip_drain <- ss$PRECIP[[i]]
 
-    bf_known <- ss$bfw[[i]]
+    if(!missing(bfw)){bf_known <- ss$bfw[[i]]}
 
     geo_known <- ss$geo[[i]]
 
@@ -489,7 +482,7 @@ batch_culverts <- function(ss, rre = NULL, bfw,geo = 1) {
   #culvert estimation function
 
 
-  if(is.null(rre)) {
+  if(missing(rre)) {
 
     together <- plyr::rbind.fill(Omang_parrett_hull_flows, parrett_and_johnson)
 
@@ -507,12 +500,12 @@ batch_culverts <- function(ss, rre = NULL, bfw,geo = 1) {
     }
 
   } else {
-  culvert_usgs <- rre
 
-    culvert_usgs <- culvert_usgs %>% select(basin_char = Value, ReturnInterval = Name) %>%
+
+  culvert_usgs <- rre %>% select(basin_char = Value, ReturnInterval = Name) %>%
       mutate(source = "USGS Regression", group = rre$group) %>% dplyr::filter(ReturnInterval %in% c("2 Year Peak Flood", "25 Year Peak Flood",
                                                                                              "50 Year Peak Flood", "100 Year Peak Flood"))
-    }
+
 
   culvert_usgs <- culvert_usgs %>% dplyr::filter(group %in% ss$group)
 
@@ -532,8 +525,8 @@ batch_culverts <- function(ss, rre = NULL, bfw,geo = 1) {
       mutate(across(where(is.numeric), round, 0)) %>% mutate(Size = culvert_size(value))
 
   }
+}
 
-  return(together_long)
 }
 
 #' Culvert Size

@@ -579,11 +579,12 @@ if(missing(procDV) & is.null(sites))stop("Need at least one argument")
 
     usgs_statsmv <- data.frame()
     for(i in 1:length(sites_proc_m)){
-      usgs_st_m <- dataRetrieval::readNWISstat(sites_proc_m[[i]],
+      usgs_st_m <- tryCatch({dataRetrieval::readNWISstat(sites_proc_m[[i]],
                                               parameterCd = "00060",
                                               statType = 'mean',
                                               statReportType = 'monthly') %>%
-        mutate(Station = readNWISsite(sites_proc_m[[i]]) %>% select(station_nm) %>% as.character())
+        mutate(Station = readNWISsite(sites_proc_m[[i]]) %>% select(station_nm) %>% as.character())},
+         error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
       usgs_statsmv <- plyr::rbind.fill(usgs_st_m,usgs_statsmv)
     }
 
