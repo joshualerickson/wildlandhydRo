@@ -9,7 +9,6 @@
 #' @importFrom stats quantile loess predict
 #' @importFrom dplyr summarize bind_rows
 #' @importFrom zoo rollmean
-#' @export
 #'
 #' @examples
 laura_DeCicco_fun <- function(procDV, site = NULL, rolln = 30) {

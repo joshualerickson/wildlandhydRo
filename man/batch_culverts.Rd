@@ -4,7 +4,7 @@
 \alias{batch_culverts}
 \title{Batch Culvert Sizes}
 \usage{
-batch_culverts(ss, rre = NULL, bfw, geo = 1)
+batch_culverts(ss, rre, bfw, geo = 1)
 }
 \arguments{
 \item{ss}{A \link[wildlandhydRo]{batch_StreamStats} object}

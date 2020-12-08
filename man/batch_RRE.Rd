@@ -4,7 +4,7 @@
 \alias{batch_RRE}
 \title{Batch USGS Regional Regression Estimates (RRE)}
 \usage{
-batch_RRE(data = NULL, state, wkID, group)
+batch_RRE(data, state, wkID, group)
 }
 \arguments{
 \item{data}{A \link[wildlandhydro]{batch_StreamStats} with \code{state and wkID} variables}
