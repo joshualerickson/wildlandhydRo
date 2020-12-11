@@ -42,7 +42,4 @@ get_Basin <- function(sf_pt){
 
 
 }
-library(tidyverse)
-drain <- get_Basin(c(48.228,-115.23))
 
-drain %>% ggplot() + geom_sf()
