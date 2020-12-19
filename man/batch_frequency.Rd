@@ -16,5 +16,8 @@ A \code{data.frame} with return intervals and associated value for Weibull,
 GEV, Log-pearson type III, Pearson, Gumbel, Normal and Lognormal distributions.
 }
 \description{
-Batched Frequencies
+This function fits a variable (e.g., flow, snow, rain, etc) to a univariate distribution
+function, e.g. Weibull,
+GEV, Log-pearson type III, Pearson, Gumbel, Normal and Lognormal distributions. Values must be greater than zero and size must be greater than 10.
+It is up to the user to decide which distribution function to use.
 }

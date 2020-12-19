@@ -22,6 +22,9 @@
 batch_USGSdv <- function(sites, parameterCd = "00060", start_date = "", end_date = "") {
 
 
+  logic <- nchar(sites) > 8
+
+if(TRUE %in% logic){stop("Only sites with 8 character length")}
 
   site_id_usgs <- data.frame(sites = sites)
 
@@ -53,6 +56,12 @@ batch_USGSdv <- function(sites, parameterCd = "00060", start_date = "", end_date
   error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 
   }
+
+  #NEED TO ADD QC FOR MISSING SERVER CALLS
+
+
+if(nrow(usgs_raw_dv) < 1){stop("server couldn't get data")}
+
 
   ###### might add this in the future if problems or concerns arise hijacked from lauren deCicco#####
                       #### but with slider might not need it ####
@@ -111,9 +120,11 @@ return(usgs_raw_dv)
 #' @examples
 wyUSGS <- function(procDV, sites = NULL) {
 
+
 if(missing(procDV)) {
 
   usgs_raw <- batch_USGSdv(sites = sites) %>% mutate(Flow = ifelse(Flow <= 0 , Flow + 0.01, Flow))
+
 
 } else {
 
@@ -143,10 +154,11 @@ usgs_min_max_wy <- usgs_raw %>%
             Min_dnorm = Minimum/drainage_area,
             Mean_dnorm = Mean/drainage_area,
             Med_dnorm = Median/drainage_area,
-            Max_sdnorm = Maximum/sd(log(Flow), na.rm = TRUE),
-            Min_sdnorm = Minimum/sd(log(Flow), na.rm = TRUE),
-            Mean_sdnorm = Mean/sd(log(Flow), na.rm = TRUE),
-            Med_sdnorm = Median/sd(log(Flow), na.rm = TRUE),
+            Max_sdnorm = log(Maximum)/sd(log(Flow), na.rm = TRUE),
+            Min_sdnorm = log(Minimum)/sd(log(Flow), na.rm = TRUE),
+            Mean_sdnorm = log(Mean)/sd(log(Flow), na.rm = TRUE),
+            Med_sdnorm = log(Median)/sd(log(Flow), na.rm = TRUE),
+            sdNorm = sd(log(Flow), na.rm = TRUE),
             Max_avg = Maximum/atmf,
             Min_avg = Minimum/atmf,
             Mean_avg = Mean/atmf,
@@ -164,13 +176,17 @@ peak_sites <- data.frame(peaks = unique(usgs_min_max_wy$site_no))
 peaks <- data.frame()
 for (i in 1:nrow(peak_sites)) {
 
-  peak <- tryCatch({dataRetrieval::readNWISpeak(peak_sites$peaks[[i]]) %>%
-                            select(peak_va, peak_dt, site_no)}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-  peak <- peak %>%
-            mutate(wy = waterYear(peak_dt, TRUE))
+  peak <- tryCatch({dataRetrieval::readNWISpeak(peak_sites$peaks[[i]])},
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+
+  if(nrow(peak) == 0){
+    peaks <- plyr::rbind.fill(peaks, peak)
+  } else {
+  peak <- peak %>% select(peak_va, peak_dt, site_no)
+  peak <- peak %>% mutate(wy = waterYear(peak_dt, TRUE))
 
   peaks <- plyr::rbind.fill(peaks, peak)
-
+}
 }
 
 usgs_min_max_wy <- usgs_min_max_wy %>% left_join(peaks, by = c("site_no", "wy")) %>%

@@ -1,6 +1,6 @@
 
 #' Batched Frequencies
-#' @descrition This function fits a variable (e.g., flow, snow, rain, etc) to a univariate distribution
+#' @description This function fits a variable (e.g., flow, snow, rain, etc) to a univariate distribution
 #' function, e.g. Weibull,
 #' GEV, Log-pearson type III, Pearson, Gumbel, Normal and Lognormal distributions. Values must be greater than zero and size must be greater than 10.
 #' It is up to the user to decide which distribution function to use.
@@ -70,19 +70,19 @@ batch_frequency <- function(data, value) {
 
   ReturnInterval <- c(1.0101,2,5,10,15,25,30,35,40,45,50,60,70,80,90,100,150,200)
 
-  lpIII <- qlpearsonIII(1-(1/ReturnInterval), mean = log_mean.x, sd = log_sd.x,  skew = skew_log)
+  lpIII <- smwrBase::qlpearsonIII(1-(1/ReturnInterval), mean = log_mean.x, sd = log_sd.x,  skew = skew_log)
 
-  lp <- qpearsonIII(1-(1/ReturnInterval), mean = mean.x, sd = sd.x, skew = skew)
+  lp <- smwrBase::qpearsonIII(1-(1/ReturnInterval), mean = mean.x, sd = sd.x, skew = skew)
 
-  normal <- qnorm(1-(1/ReturnInterval),mean = mean.x, sd = sd.x, lower.tail = TRUE)
+  normal <- stats::qnorm(1-(1/ReturnInterval),mean = mean.x, sd = sd.x, lower.tail = TRUE)
 
-  lognormal <- qnorm(1-(1/ReturnInterval),mean = log_mean.x, sd = log_sd.x)
+  lognormal <- stats::qnorm(1-(1/ReturnInterval),mean = log_mean.x, sd = log_sd.x)
 
-  Gumbel <- qgumbel(1-(1/ReturnInterval), scale = scale_gum, loc = loc_gum)
+  Gumbel <- evd::qgumbel(1-(1/ReturnInterval), scale = scale_gum, loc = loc_gum)
 
-  GEV <- qgev(1-(1/ReturnInterval), loc = loc_gev, scale = scale_gev, shape = shape_gev)
+  GEV <- evd::qgev(1-(1/ReturnInterval), loc = loc_gev, scale = scale_gev, shape = shape_gev)
 
-  weibull <- qweibull(1-(1/ReturnInterval), scale = weib_scale, shape = weib_shape)
+  weibull <- stats::qweibull(1-(1/ReturnInterval), scale = weib_scale, shape = weib_shape)
 
 
   Flood.Freq <- data.frame(ReturnInterval)

@@ -361,7 +361,7 @@ if (nrow(wkID) <= 1) {
 #' @importFrom readr parse_number
 #' @importFrom tidyr pivot_longer
 #' @importFrom dplyr across filter mutate select
-#' @imortFrom ape where
+#' @importFrom ape where
 #' @importFrom plyr rbind.fill
 #' @references {
 #' \insertAllCited{}
