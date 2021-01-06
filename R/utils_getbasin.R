@@ -8,6 +8,8 @@
 
 get_Basin <- function(sf_pt){
 
+  if (nrow(sf_pt)>1){stop('Only one point allowed')}
+
   if(is.atomic(sf_pt)) {
     point <- sf_pt
     clat <- point[[1]]

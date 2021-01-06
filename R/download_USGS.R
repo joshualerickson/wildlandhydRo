@@ -415,7 +415,7 @@ hourlyUSGS <- function(procDV, sites = NULL, days = 7) {
 
   usgs_download_hourly <- usgs_download_hourly %>%
     mutate(date=floor_date(date, "1 hour")) %>%
-    group_by(Station,date,fl_val) %>%
+    group_by(Station,site_no, date,fl_val) %>%
     dplyr::summarise(value = mean(value, na.rm = TRUE)) %>%
     ungroup()
 
@@ -524,7 +524,7 @@ reportUSGSdv <- function(procDV, sites = NULL) {
            month = month(Date),
            day = day(Date),
            month_day = str_c(month, day, sep = "-")) %>%
-    group_by(Station, month_day) %>%
+    group_by(Station, month_day, Date) %>%
     summarise(current_flow = mean(value, na.rm = TRUE))
 
   usgs_statsdv <- usgs_statsdv %>%
@@ -584,10 +584,22 @@ if(missing(procDV) & is.null(sites))stop("Need at least one argument")
                 p10_va = quantile(mean_va, probs = 0.1, na.rm = TRUE),
                 p05_va = quantile(mean_va, probs = 0.05, na.rm = TRUE))
 
-    usgs_statsmv <- usgs_statsmv %>% arrange(desc(year_nu)) %>%
-      filter(year_nu %in% stringr::str_extract(Sys.time(), "^.{4}")) %>%
+if(nrow(filter(usgs_statsmv, year_nu %in% stringr::str_extract(Sys.time(), "^.{4}"))) == 0){
+
+  usgs_statsmv <- usgs_statsmv %>% arrange(desc(year_nu)) %>%
+      filter(year_nu %in% as.character(as.numeric(stringr::str_extract(Sys.time(), "^.{4}")) - 1)) %>%
       rename(month = "month_nu", current_flow = "mean_va") %>%
       left_join(summary_stats, by = c("month", "Station"))
+
+} else {
+
+  usgs_statsmv <- usgs_statsmv %>% arrange(desc(year_nu)) %>%
+    filter(year_nu %in% stringr::str_extract(Sys.time(), "^.{4}"),
+           year_nu %in% as.character(as.numeric(stringr::str_extract(Sys.time(), "^.{4}")) - 1)) %>%
+    rename(month = "month_nu", current_flow = "mean_va") %>%
+    left_join(summary_stats, by = c("month", "Station"))
+}
+
 
   } else {
 
@@ -616,10 +628,21 @@ if(missing(procDV) & is.null(sites))stop("Need at least one argument")
                 p10_va = quantile(mean_va, probs = 0.1, na.rm = TRUE),
                 p05_va = quantile(mean_va, probs = 0.05, na.rm = TRUE))
 
-    usgs_statsmv <- usgs_statsmv %>% arrange(desc(year_nu)) %>%
-      filter(year_nu %in% stringr::str_extract(Sys.time(), "^.{4}")) %>%
-      rename(month = "month_nu", current_flow = "mean_va") %>%
-      left_join(summary_stats, by = c("month", "Station"))
+    if(nrow(filter(usgs_statsmv, year_nu %in% stringr::str_extract(Sys.time(), "^.{4}"))) == 0){
+
+      usgs_statsmv <- usgs_statsmv %>% arrange(desc(year_nu)) %>%
+        filter(year_nu %in% as.character(as.numeric(stringr::str_extract(Sys.time(), "^.{4}")) - 1)) %>%
+        rename(month = "month_nu", current_flow = "mean_va") %>%
+        left_join(summary_stats, by = c("month", "Station"))
+
+    } else {
+
+      usgs_statsmv <- usgs_statsmv %>% arrange(desc(year_nu)) %>%
+        filter(year_nu %in% stringr::str_extract(Sys.time(), "^.{4}"),
+               year_nu %in% as.character(as.numeric(stringr::str_extract(Sys.time(), "^.{4}")) - 1)) %>%
+        rename(month = "month_nu", current_flow = "mean_va") %>%
+        left_join(summary_stats, by = c("month", "Station"))
+    }
   }
 }
 
@@ -647,7 +670,8 @@ plot_reportUSGS <- function(report, time = "daily") {
       per <- c("p05_va","p10_va","p20_va","p25_va","p50_va","p75_va","p80_va","p90_va","p95_va")
       percentiles <- report %>%
         pivot_longer(cols = all_of(per), names_to = "Percentile") %>%
-        mutate(Percentile = str_replace_all(Percentile, "_va|p", ""))
+        mutate(Percentile = str_replace_all(Percentile, "_va|p", ""),
+               month_day = fct_reorder(month_day, Date, .desc = T))
 
 if(length(unique(percentiles$Station))>1){
       ggplot(percentiles, aes(Percentile, value))+
@@ -672,7 +696,8 @@ if(length(unique(percentiles$Station))>1){
     per <- c("p05_va","p10_va","p20_va","p25_va","p50_va","p75_va","p80_va","p90_va","p95_va")
     percentiles <- report %>%
       pivot_longer(cols = all_of(per), names_to = "Percentile") %>%
-      mutate(Percentile = str_replace_all(Percentile, "_va|p", ""))
+      mutate(Percentile = str_replace_all(Percentile, "_va|p", ""),
+             month_day = fct_reorder(month_day, Date))
 
     if(length(unique(percentiles$Station))>1){
       ggplot(percentiles, aes(Percentile, value))+

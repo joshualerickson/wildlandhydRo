@@ -15,5 +15,5 @@ A \code{data.frame}
 \description{
 A function that locates the nearest SNOTEL station and returns a sf object. This function only works with
 a sf object and is really handy when using
-\link[AOI]{AOI-package} functions. This function is hijacked from \link[nhdplusTools]{get_NWIS}.
+\link[AOI]{AOI-package} functions. This function is hijacked from \link[nhdplusTools]{get_nwis}.
 }
