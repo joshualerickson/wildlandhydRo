@@ -4,7 +4,13 @@
 \alias{laura_DeCicco_fun}
 \title{30-day moving average}
 \usage{
-laura_DeCicco_fun(procDV, site = NULL, rolln = 30)
+laura_DeCicco_fun(
+  procDV,
+  site = NULL,
+  rolln = 30,
+  startDate = "2010-01-01",
+  endDate = "2015-01-01"
+)
 }
 \arguments{
 \item{procDV}{A previously created proc DV}

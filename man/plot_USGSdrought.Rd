@@ -4,7 +4,13 @@
 \alias{plot_USGSdrought}
 \title{USGS Drought Plot}
 \usage{
-plot_USGSdrought(procDV, site = NULL, rolln = 30)
+plot_USGSdrought(
+  procDV,
+  site = NULL,
+  rolln = 30,
+  startDate = "2010-01-01",
+  endDate = "2015-01-01"
+)
 }
 \arguments{
 \item{procDV}{A previously created \link[wildlandhydRo]{batch_USGSdv} object.\code{optional}}

@@ -738,17 +738,17 @@ if(length(unique(percentiles$Station))>1){
 #'
 #'
 #'
-plot_USGSdrought <- function(procDV, site = NULL, rolln = 30) {
+plot_USGSdrought <- function(procDV, site = NULL, rolln = 30, startDate = '2010-01-01', endDate = '2015-01-01') {
 if(is.null(rolln)) stop("Need 'rolln' for moving average")
   if(rolln %in% c(0, Inf, -Inf))stop({"rolln needs to be positive."})
 if(is.null(site) & missing(procDV)) stop("Need at least one argument")
 
   if(is.null(site)){
 
-  laura_DeCicco_fun(procDV = {{ procDV }}, rolln = {{ rolln }})
+  laura_DeCicco_fun(procDV = {{ procDV }}, rolln = {{ rolln }}, startDate = {{ startDate }}, endDate = {{ endDate }})
 
   } else if (missing(procDV)){
 
-    laura_DeCicco_fun(site = {{ site }}, rolln = {{ rolln }})
+    laura_DeCicco_fun(site = {{ site }}, rolln = {{ rolln }}, startDate = {{ startDate }}, endDate = {{ endDate }})
   }
 }
