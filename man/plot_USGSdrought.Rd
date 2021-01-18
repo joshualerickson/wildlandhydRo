@@ -18,9 +18,13 @@ plot_USGSdrought(
 \item{site}{A USGS NWIS site. \code{optional}}
 
 \item{rolln}{A \code{numeric} number of days in moving average}
+
+\item{startDate}{A \code{character} indicating the start date.}
+
+\item{endDate}{A \code{character} indicating the end date.}
 }
 \value{
-A ggplot. Doesn't work with plotly::ggplotly.
+A ggplot. Works with plotly::ggplotly.
 }
 \description{
 This function is hijacked from a blog post by Laura DeCicco at \url{https://waterdata.usgs.gov/blog/moving-averages/}.

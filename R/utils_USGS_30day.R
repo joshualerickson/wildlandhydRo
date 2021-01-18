@@ -92,20 +92,26 @@ laura_DeCicco_fun <- function(procDV, site = NULL, rolln = 30, startDate = '2010
     scale_y_log10() +
     geom_line(data = latest.years, aes(x=Date, y=rollMean, color = paste0(30,"-Day Mean")),size = .75)
 
-  styled.plot <- simple.plot +
-    annotation_logticks(sides="l") +
-    theme_bw() +
-    theme(axis.ticks.x=element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank()) +
-    labs(title=title.text,
-         y = paste(30,"-day moving ave", x="")) +
-    scale_fill_manual(name="",breaks = label.text,
-                      values = rev(c("red","orange","yellow","darkgreen"))) +
-    scale_color_manual(name = "", values = "black") +
-    theme(legend.position="bottom")
+  styled.plot <- sty.p(simple.plot, breaks = label.text, title = title.text)
 
   styled.plot
 
 
+}
+
+
+sty.p <- function(data, breaks, title) {
+
+  data +
+  annotation_logticks(sides="l") +
+  theme_bw() +
+  theme(axis.ticks.x=element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  labs(title=title,
+       y = paste(30,"-day moving ave", x="")) +
+  scale_fill_manual(name="",breaks = breaks,
+                    values = rev(c("red","orange","yellow","darkgreen"))) +
+  scale_color_manual(name = "", values = "black") +
+  theme(legend.position="bottom")
 }

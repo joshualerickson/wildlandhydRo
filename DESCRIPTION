@@ -18,7 +18,7 @@ Imports: Rdpack, dplyr, tidyr, magrittr,
           dataRetrieval, stringr, ape, ggrepel,
           lubridate, stats, extRemes, evd, smwrBase,
           lfstat, ggplot2, ggpubr, fitdistrplus,
-          scales, zoo, forcats
+          scales, zoo, forcats, readr
 Remotes: 
          mikejohnson51/AOI, 
          markwh/streamstats,

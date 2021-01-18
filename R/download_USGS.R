@@ -732,8 +732,9 @@ if(length(unique(percentiles$Station))>1){
 #' @param procDV A previously created \link[wildlandhydRo]{batch_USGSdv} object.\code{optional}
 #' @param site A USGS NWIS site. \code{optional}
 #' @param rolln A \code{numeric} number of days in moving average
-#'
-#' @return A ggplot. Doesn't work with plotly::ggplotly.
+#' @param startDate A \code{character} indicating the start date.
+#' @param endDate A \code{character} indicating the end date.
+#' @return A ggplot. Works with plotly::ggplotly.
 #' @export
 #'
 #'
@@ -751,4 +752,109 @@ if(is.null(site) & missing(procDV)) stop("Need at least one argument")
 
     laura_DeCicco_fun(site = {{ site }}, rolln = {{ rolln }}, startDate = {{ startDate }}, endDate = {{ endDate }})
   }
+}
+
+
+
+
+#' USGS Flow Duration Curve
+#' @description This function generates Flow Duration Curves.
+#' @param procDV A previously created \link[wildlandhydRo]{batch_USGSdv} object.\code{optional}
+#' @param site A USGS NWIS site. \code{optional}
+#' @param startDate A \code{character} indicating the start date.
+#' @param endDate A \code{character} indicating the end date.
+#' @param seasons A \code{logical} whether to split by seasons.
+#' @param span_season A \code{character} indicating a season, e.g. '4-1':'6-30'.
+#'
+#' @return A ggplot. Works with plotly::ggplotly.
+#' @export
+#'
+#'
+#'
+plot_USGSfdc <- function(procDV, site = NULL, startDate = '2010-01-01', endDate = '2015-01-01',
+                         seasons = FALSE, span_season = NULL) {
+
+  if(is.null(site) & missing(procDV)) stop("Need at least one argument")
+
+  if(is.null(site)){
+
+   fdc <- procDV %>% dplyr::filter(Date >= {{startDate}}, Date <= {{endDate}} )
+
+  } else if (missing(procDV)){
+
+    fdc <- wildlandhydRo::batch_USGSdv(sites = {{ site }}, start_date = {{ startDate }}, end_date = {{ endDate }})
+
+  }
+
+  if(seasons == TRUE) {
+
+    span1 <- as.Date(span_season[1], '%m-%d')
+    span2 <- as.Date(span_season[2], '%m-%d')
+
+    fdc <- fdc %>% dplyr::mutate(m_d = as.Date(month_day, format = '%m-%d'))
+
+    if(span1 < span2){
+
+      f1 <- fdc %>%
+        dplyr::filter(m_d <= span1) %>%
+        dplyr::mutate(season = paste(stringr::str_sub(span2, 6), ' to ', stringr::str_sub(span1, 6)))
+
+      f2 <- fdc %>%
+        dplyr::filter(m_d >= span2) %>%
+        dplyr::mutate(season = paste(stringr::str_sub(span2, 6), ' to ', stringr::str_sub(span1, 6)))
+
+    } else {
+
+      f1 <- fdc %>%
+        dplyr::filter(m_d >= span1) %>%
+        dplyr::mutate(season = paste(stringr::str_sub(span2, 6), ' to ', stringr::str_sub(span1, 6)))
+
+      f2 <- fdc %>%
+        dplyr::filter(m_d <= span2) %>%
+        dplyr::mutate(season = paste(stringr::str_sub(span2, 6), ' to ', stringr::str_sub(span1, 6)))
+
+    }
+
+    fdc_s1 <- rbind.data.frame(f1,f2)
+
+    fdc_1 <- quantile(fdc_s1$Flow, probs = seq(0,1,.01)) %>% data.frame(flow = .) %>%
+      dplyr::mutate(pct = rownames(.),
+                    pct = readr::parse_number(pct),
+                    season = paste(fdc_s1[1,]$season))
+
+    fdc_s2 <- fdc %>% dplyr::filter(!month_day %in% fdc_s1$month_day) %>%
+      dplyr::mutate(season = paste(stringr::str_sub(span1, 6), ' to ', stringr::str_sub(span2, 6)))
+
+    fdc_2 <- quantile(fdc_s2$Flow, probs = seq(0,1,.01)) %>% data.frame(flow = .) %>%
+      dplyr::mutate(pct = rownames(.),
+             pct = readr::parse_number(pct),
+             season = paste(fdc_s2[1,]$season))
+
+
+    fdc_final <- rbind.data.frame(fdc_1, fdc_2)
+
+
+    p1 <- fdc_final %>% dplyr::mutate(`Percentile` = rev(pct)) %>%
+      ggplot(aes(`Percentile`, flow, color = season)) + geom_line() +
+      scale_y_log10()
+
+  } else {
+
+    fdc <- quantile(fdc$Flow, probs = seq(0,1,.01)) %>% data.frame(flow = .) %>%
+      dplyr::mutate(pct = rownames(.),
+             pct = parse_number(pct),
+             `Percentile` = rev(pct))
+
+    p1 <- fdc %>%
+      ggplot(aes(`Percentile`, flow)) + geom_line() +
+      scale_y_log10()
+  }
+title.text <- paste("FDC Plot from ", startDate, ' to ', endDate)
+  styled.plot <- p1 +
+    annotation_logticks(sides=c('l')) +
+    theme_light() +
+    labs(title = title.text, y = 'Discharge (cfs)', color = "Season")+
+    scale_x_continuous(breaks = seq(0,100,10))
+
+  styled.plot
 }
