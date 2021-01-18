@@ -761,28 +761,43 @@ if(is.null(site) & missing(procDV)) stop("Need at least one argument")
 #' @description This function generates Flow Duration Curves.
 #' @param procDV A previously created \link[wildlandhydRo]{batch_USGSdv} object.\code{optional}
 #' @param site A USGS NWIS site. \code{optional}
-#' @param startDate A \code{character} indicating the start date.
-#' @param endDate A \code{character} indicating the end date.
+#' @param startDate A \code{character} indicating the start date. minimum (default).
+#' @param endDate A \code{character} indicating the end date. maximum (default)
 #' @param seasons A \code{logical} whether to split by seasons.
-#' @param span_season A \code{character} indicating a season, e.g. '4-1':'6-30'.
+#' @param span_season A \code{character} vector indicating a season, e.g. c('4-1', '6-30').
 #'
 #' @return A ggplot. Works with plotly::ggplotly.
 #' @export
 #'
 #'
 #'
-plot_USGSfdc <- function(procDV, site = NULL, startDate = '2010-01-01', endDate = '2015-01-01',
+plot_USGSfdc <- function(procDV, site = NULL, startDate = '', endDate = '',
                          seasons = FALSE, span_season = NULL) {
 
   if(is.null(site) & missing(procDV)) stop("Need at least one argument")
 
   if(is.null(site)){
 
-   fdc <- procDV %>% dplyr::filter(Date >= {{startDate}}, Date <= {{endDate}} )
+if(startDate == '' & endDate != ''){
+
+  fdc_first <- procDV %>% dplyr::filter(Date >= min(Date), Date <= {{endDate}})
+} else if (endDate == '' & startDate != ''){
+
+  fdc_first <- procDV %>% dplyr::filter(Date >= {{startDate}}, Date <= max(Date))
+
+} else if (startDate == '' | endDate == '') {
+
+  fdc_first <- procDV %>% dplyr::filter(Date >= min(Date), Date <= max(Date))
+
+} else {
+
+   fdc_first <- procDV %>% dplyr::filter(Date >= {{startDate}}, Date <= {{endDate}} )
+
+   }
 
   } else if (missing(procDV)){
 
-    fdc <- wildlandhydRo::batch_USGSdv(sites = {{ site }}, start_date = {{ startDate }}, end_date = {{ endDate }})
+    fdc_first <- wildlandhydRo::batch_USGSdv(sites = {{ site }}, start_date = {{ startDate }}, end_date = {{ endDate }})
 
   }
 
@@ -791,7 +806,7 @@ plot_USGSfdc <- function(procDV, site = NULL, startDate = '2010-01-01', endDate 
     span1 <- as.Date(span_season[1], '%m-%d')
     span2 <- as.Date(span_season[2], '%m-%d')
 
-    fdc <- fdc %>% dplyr::mutate(m_d = as.Date(month_day, format = '%m-%d'))
+    fdc <- fdc_first %>% dplyr::mutate(m_d = as.Date(month_day, format = '%m-%d'))
 
     if(span1 < span2){
 
@@ -840,7 +855,7 @@ plot_USGSfdc <- function(procDV, site = NULL, startDate = '2010-01-01', endDate 
 
   } else {
 
-    fdc <- quantile(fdc$Flow, probs = seq(0,1,.01)) %>% data.frame(flow = .) %>%
+    fdc <- quantile(fdc_first$Flow, probs = seq(0,1,.01)) %>% data.frame(flow = .) %>%
       dplyr::mutate(pct = rownames(.),
              pct = parse_number(pct),
              `Percentile` = rev(pct))
@@ -849,7 +864,10 @@ plot_USGSfdc <- function(procDV, site = NULL, startDate = '2010-01-01', endDate 
       ggplot(aes(`Percentile`, flow)) + geom_line() +
       scale_y_log10()
   }
-title.text <- paste("FDC Plot from ", startDate, ' to ', endDate)
+
+
+title.text <- paste("FDC Plot from ", min(fdc_first$Date), ' to ', max(fdc_first$Date))
+
   styled.plot <- p1 +
     annotation_logticks(sides=c('l')) +
     theme_light() +

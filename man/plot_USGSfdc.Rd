@@ -7,8 +7,8 @@
 plot_USGSfdc(
   procDV,
   site = NULL,
-  startDate = "2010-01-01",
-  endDate = "2015-01-01",
+  startDate = "",
+  endDate = "",
   seasons = FALSE,
   span_season = NULL
 )
@@ -18,13 +18,13 @@ plot_USGSfdc(
 
 \item{site}{A USGS NWIS site. \code{optional}}
 
-\item{startDate}{A \code{character} indicating the start date.}
+\item{startDate}{A \code{character} indicating the start date. minimum (default).}
 
-\item{endDate}{A \code{character} indicating the end date.}
+\item{endDate}{A \code{character} indicating the end date. maximum (default)}
 
 \item{seasons}{A \code{logical} whether to split by seasons.}
 
-\item{span_season}{A \code{character} indicating a season, e.g. '4-1':'6-30'.}
+\item{span_season}{A \code{character} vector indicating a season, e.g. c('4-1', '6-30').}
 }
 \value{
 A ggplot. Works with plotly::ggplotly.
