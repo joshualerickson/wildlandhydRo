@@ -812,21 +812,21 @@ if(startDate == '' & endDate != ''){
 
       f1 <- fdc %>%
         dplyr::filter(m_d <= span1) %>%
-        dplyr::mutate(season = paste(stringr::str_sub(span2, 6), ' to ', stringr::str_sub(span1, 6)))
+        dplyr::mutate(season = paste(stringr::str_sub(span1, 6), ' to ', stringr::str_sub(span2, 6)))
 
       f2 <- fdc %>%
         dplyr::filter(m_d >= span2) %>%
-        dplyr::mutate(season = paste(stringr::str_sub(span2, 6), ' to ', stringr::str_sub(span1, 6)))
+        dplyr::mutate(season = paste(stringr::str_sub(span1, 6), ' to ', stringr::str_sub(span2, 6)))
 
     } else {
 
       f1 <- fdc %>%
         dplyr::filter(m_d >= span1) %>%
-        dplyr::mutate(season = paste(stringr::str_sub(span2, 6), ' to ', stringr::str_sub(span1, 6)))
+        dplyr::mutate(season = paste(stringr::str_sub(span1, 6), ' to ', stringr::str_sub(span2, 6)))
 
       f2 <- fdc %>%
         dplyr::filter(m_d <= span2) %>%
-        dplyr::mutate(season = paste(stringr::str_sub(span2, 6), ' to ', stringr::str_sub(span1, 6)))
+        dplyr::mutate(season = paste(stringr::str_sub(span1, 6), ' to ', stringr::str_sub(span2, 6)))
 
     }
 
@@ -838,7 +838,7 @@ if(startDate == '' & endDate != ''){
                     season = paste(fdc_s1[1,]$season))
 
     fdc_s2 <- fdc %>% dplyr::filter(!month_day %in% fdc_s1$month_day) %>%
-      dplyr::mutate(season = paste(stringr::str_sub(span1, 6), ' to ', stringr::str_sub(span2, 6)))
+      dplyr::mutate(season = paste(stringr::str_sub(span2, 6), ' to ', stringr::str_sub(span1, 6)))
 
     fdc_2 <- quantile(fdc_s2$Flow, probs = seq(0,1,.01)) %>% data.frame(flow = .) %>%
       dplyr::mutate(pct = rownames(.),
