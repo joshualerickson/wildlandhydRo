@@ -803,6 +803,9 @@ if(startDate == '' & endDate != ''){
 
   if(seasons == TRUE) {
 
+    span1 <- as.Date(span_season[1], '%m-%d')
+    span2 <- as.Date(span_season[2], '%m-%d')
+
     fdc <- fdc_first %>% dplyr::mutate(m_d = as.Date(month_day, format = '%m-%d'))
 
     if(span1 < span2){
