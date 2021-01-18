@@ -803,20 +803,17 @@ if(startDate == '' & endDate != ''){
 
   if(seasons == TRUE) {
 
-    span1 <- as.Date(span_season[1], '%m-%d')
-    span2 <- as.Date(span_season[2], '%m-%d')
-
     fdc <- fdc_first %>% dplyr::mutate(m_d = as.Date(month_day, format = '%m-%d'))
 
     if(span1 < span2){
 
       f1 <- fdc %>%
         dplyr::filter(m_d <= span1) %>%
-        dplyr::mutate(season = paste(stringr::str_sub(span1, 6), ' to ', stringr::str_sub(span2, 6)))
+        dplyr::mutate(season = paste(stringr::str_sub(span2, 6), ' to ', stringr::str_sub(span1, 6)))
 
       f2 <- fdc %>%
         dplyr::filter(m_d >= span2) %>%
-        dplyr::mutate(season = paste(stringr::str_sub(span1, 6), ' to ', stringr::str_sub(span2, 6)))
+        dplyr::mutate(season = paste(stringr::str_sub(span2, 6), ' to ', stringr::str_sub(span1, 6)))
 
     } else {
 
@@ -837,13 +834,17 @@ if(startDate == '' & endDate != ''){
                     pct = readr::parse_number(pct),
                     season = paste(fdc_s1[1,]$season))
 
-    fdc_s2 <- fdc %>% dplyr::filter(!month_day %in% fdc_s1$month_day) %>%
-      dplyr::mutate(season = paste(stringr::str_sub(span2, 6), ' to ', stringr::str_sub(span1, 6)))
-
+    if(span1 < span2){
+      fdc_s2 <- fdc %>% dplyr::filter(!month_day %in% fdc_s1$month_day) %>%
+        dplyr::mutate(season = paste(stringr::str_sub(span1, 6), ' to ', stringr::str_sub(span2, 6)))
+    } else {
+      fdc_s2 <- fdc %>% dplyr::filter(!month_day %in% fdc_s1$month_day) %>%
+        dplyr::mutate(season = paste(stringr::str_sub(span2, 6), ' to ', stringr::str_sub(span1, 6)))
+    }
     fdc_2 <- quantile(fdc_s2$Flow, probs = seq(0,1,.01)) %>% data.frame(flow = .) %>%
       dplyr::mutate(pct = rownames(.),
-             pct = readr::parse_number(pct),
-             season = paste(fdc_s2[1,]$season))
+                    pct = readr::parse_number(pct),
+                    season = paste(fdc_s2[1,]$season))
 
 
     fdc_final <- rbind.data.frame(fdc_1, fdc_2)
@@ -857,8 +858,8 @@ if(startDate == '' & endDate != ''){
 
     fdc <- quantile(fdc_first$Flow, probs = seq(0,1,.01)) %>% data.frame(flow = .) %>%
       dplyr::mutate(pct = rownames(.),
-             pct = parse_number(pct),
-             `Percentile` = rev(pct))
+                    pct = parse_number(pct),
+                    `Percentile` = rev(pct))
 
     p1 <- fdc %>%
       ggplot(aes(`Percentile`, flow)) + geom_line() +
@@ -866,7 +867,7 @@ if(startDate == '' & endDate != ''){
   }
 
 
-title.text <- paste("FDC Plot from ", min(fdc_first$Date), ' to ', max(fdc_first$Date))
+  title.text <- paste("FDC Plot from ", min(fdc_first$Date), ' to ', max(fdc_first$Date))
 
   styled.plot <- p1 +
     annotation_logticks(sides=c('l')) +
