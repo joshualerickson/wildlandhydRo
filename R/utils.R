@@ -36,3 +36,13 @@ waterYear <- function(x, numeric=FALSE) {
   ordered(yr)
 }
 
+
+#smoothing function
+smooth_func <- function(percentiles, smooth.span){
+  percentiles <- percentiles %>%
+    mutate( p75 = predict(loess(p75~day.of.year, data = percentiles, span = smooth.span)),
+            p25 = predict(loess(p25~day.of.year, data = percentiles, span = smooth.span)),
+            p10 = predict(loess(p10~day.of.year, data = percentiles, span = smooth.span)),
+            p05 = predict(loess(p05~day.of.year, data = percentiles, span = smooth.span)),
+            min = predict(loess(min~day.of.year, data = percentiles, span = smooth.span)))
+}

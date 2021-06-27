@@ -4,7 +4,7 @@
 \alias{hourlySNOTEL}
 \title{Hourly SNOTEL}
 \usage{
-hourlySNOTEL(procDV, sites = NULL, days = 7)
+hourlySNOTEL(procDV, sites = NULL, days = 7, parallel = FALSE, ...)
 }
 \arguments{
 \item{procDV}{A previously created \link[wildlandhydRo]{batch_SNOTELdv} object}

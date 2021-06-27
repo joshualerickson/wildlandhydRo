@@ -4,12 +4,14 @@
 \alias{plot_reportUSGS}
 \title{Plot USGS Report}
 \usage{
-plot_reportUSGS(report, time = "daily")
+plot_reportUSGS(report, time = "daily", smooth.span = NULL)
 }
 \arguments{
 \item{report}{A previously created \link[wildlandhydRo]{reportUSGSdv} or \link[wildlandhydRo]{reportUSGSmv} object.}
 
 \item{time}{A \code{character} vector indicating "daily" or "month".}
+
+\item{smooth.span}{A \code{numeric} value indicating the smoothing parameter for the \link[stats]{loess} function. If NULL (default) no smoothing will happen.}
 }
 \value{
 A ggplot object

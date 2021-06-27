@@ -13,7 +13,7 @@ plot_baseflow(procDV, sites = NULL, wy, parallel = FALSE, ...)
 
 \item{wy}{A \code{numeric} or \code{character} water year, e.g. 1990:2000, 1990, or c("1990", "2000").}
 
-\item{parallel}{\code{logical} indicating whether to use future_map().}
+\item{parallel}{\code{logical} indicating whether to use future_map() if using \code{sites} argument.}
 
 \item{...}{arguments to pass on to \link[furrr]{future_map} and \link[wildlandhydRo]{batch_USGSdv}.}
 }

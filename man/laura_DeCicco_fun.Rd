@@ -9,7 +9,8 @@ laura_DeCicco_fun(
   site = NULL,
   rolln = 30,
   startDate = "2010-01-01",
-  endDate = "2015-01-01"
+  endDate = "2015-01-01",
+  smooth.span = NULL
 )
 }
 \arguments{
@@ -18,6 +19,10 @@ laura_DeCicco_fun(
 \item{site}{A USGS NWIS site}
 
 \item{rolln}{Number of days in moving average}
+
+\item{startDate}{A character date, e.g. '2000-01-01'}
+
+\item{endDate}{A character date, e.g. '2002-12-25'}
 }
 \value{
 

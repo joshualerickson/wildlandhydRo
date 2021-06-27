@@ -4,12 +4,16 @@
 \alias{wymSNOTEL}
 \title{Water Year & Monthly Stats (SNOTEL)}
 \usage{
-wymSNOTEL(procDV, sites = NULL)
+wymSNOTEL(procDV, sites = NULL, parallel = FALSE, ...)
 }
 \arguments{
 \item{procDV}{A previously created \link[wildlandhydRo]{batch_SNOTELdv} object. \code{recommended}}
 
 \item{sites}{A vector of SNOTEL site locations, e.g. \code{c("311", "500")}. \code{optional}}
+
+\item{parallel}{\code{logical} indicating whether to use future_map().}
+
+\item{...}{arguments to pass on to \link[furrr]{future_map}.}
 }
 \value{
 A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.

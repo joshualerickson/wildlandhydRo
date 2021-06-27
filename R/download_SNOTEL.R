@@ -152,11 +152,9 @@ batch_SNOTELdv <- function(sites, parallel = FALSE, ...) {
                                                    stringsAsFactors = FALSE)
 
                            # subsitute column names
-                           df <- wildlandhydRo:::snotel_wild_custom(df)
+                           df <- snotel_wild_custom(df) %>% mutate(site_id = md$site_id)
 
-                           df <- cbind.data.frame(md, df, row.names = NULL)
-
-                         snotel_data <- plyr::rbind.fill(snotel_data, df)
+                           df <- left_join(md, df, by = 'site_id')
                 }
 
                 if(isTRUE(parallel)){
@@ -185,7 +183,6 @@ batch_SNOTELdv <- function(sites, parallel = FALSE, ...) {
            month_abb = factor(month.abb[month], levels = month.abb),
            site_name = str_to_title(site_name),
            site_name = factor(site_name))
-  return(snotel_data)
 
 }
 
@@ -194,12 +191,14 @@ batch_SNOTELdv <- function(sites, parallel = FALSE, ...) {
 #' the maximum and mean of snow water equivalent and snow depth per water year.
 #' @param procDV A previously created \link[wildlandhydRo]{batch_SNOTELdv} object. \code{recommended}
 #' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}. \code{optional}
+#' @param parallel \code{logical} indicating whether to use future_map().
+#' @param ... arguments to pass on to \link[furrr]{future_map}.
 #'
 #' @return A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.
 #' @export
 #'
 #' @examples
-wySNOTEL <- function(procDV, sites = NULL) {
+wySNOTEL <- function(procDV, sites = NULL,  parallel = FALSE, ...) {
 
   #error catching
   if(!is.null(sites) & !missing(procDV)){stop("Can't use both Sites and procDV")}
@@ -221,26 +220,13 @@ wySNOTEL <- function(procDV, sites = NULL) {
     stop("no site found with the requested ID")
   }
 
-  #create blank dataframe to store the information in
-  snotel_download_wy <- data.frame()
-
-  #run for loop over api, pulling necessary data.
-
-  for (i in 1:nrow(meta_data)){
-    # loop over selection, and download the data
-
-    tryCatch({
-
-      # some feedback on the download progress
-      message(sprintf("Downloading site: %s, with id: %s\n",
-                      meta_data$site_id[i],
-                      meta_data$site_name[i]))
+snotel_yearly <- function(md){
       # download url (metric by default!)
       base_url <- paste0(
         "https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customMultiTimeSeriesGroupByStationReport/annual_water_year/start_of_period/",
-        meta_data$site_id[i], ":",
-        meta_data$state[i], ":",
-        meta_data$network[i],
+        md$site_id, ":",
+        md$state, ":",
+        md$network,
         '%7Cid=""%7Cname/POR_BEGIN,POR_END/WTEQ::value:daily%20MEAN,WTEQ::value:daily%20MAX,SNWD::value:daily%20MEAN,SNWD::value:daily%20MAX'
       )
 
@@ -250,19 +236,13 @@ wySNOTEL <- function(procDV, sites = NULL) {
                                                            "snotel_tmp.csv"),
                                           overwrite = TRUE))
 
-      # catch error and remove resulting zero byte files
-      if (httr::http_error(error)) {
-        warning(sprintf("Downloading site %s failed, removed empty file.",
-                        meta_data$site_id[i]))
-      }
-
       # read in the snotel data
       df <- readr::read_csv(file.path(tempdir(),"snotel_tmp.csv"),comment = "#", col_types = readr::cols())
 
       # subsitute column names
       # define new column names
       snotel_columns <- c(
-        "date",
+        "wy",
         "swe_mean",
         "swe_max",
         "snow_mean",
@@ -272,21 +252,33 @@ wySNOTEL <- function(procDV, sites = NULL) {
       # rename columns
       colnames(df) <- snotel_columns
 
-
-      df <- cbind.data.frame(meta_data[i,], df, row.names = NULL)
-
-      #combine df with blank dataframe (usgs_download_hourly)
-
-      snotel_download_wy <- plyr::rbind.fill(snotel_download_wy, df)
+      df <- df %>% dplyr::mutate(site_id = md$site_id)
 
 
-    }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+      df <- dplyr::left_join(md, df, by = 'site_id')
 
-  }
-snotel_download_wy <- snotel_download_wy %>%
-  rename(wy = "date")
 
-  return(snotel_download_wy)
+}
+if(isTRUE(parallel)){
+
+  snotel_download_wy <- meta_data %>%
+    split(.$site_id) %>%
+    furrr::future_map(safely(~snotel_yearly(.))) %>%
+    purrr::keep(~length(.) != 0) %>%
+    purrr::map(~.x[['result']]) %>%
+    plyr::rbind.fill()
+
+} else {
+
+  snotel_download_wy <- meta_data %>%
+    split(.$site_id) %>%
+    purrr::map(safely(~snotel_yearly(.)))%>%
+    purrr::keep(~length(.) != 0) %>%
+    purrr::map(~.x[['result']]) %>%
+    plyr::rbind.fill()
+
+}
+
 
 }
 
@@ -295,6 +287,8 @@ snotel_download_wy <- snotel_download_wy %>%
 #' the maximum and mean of snow water equivalent and snow depth per water year per month.
 #' @param procDV A previously created \link[wildlandhydRo]{batch_SNOTELdv} object. \code{recommended}
 #' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}. \code{optional}
+#' @param parallel \code{logical} indicating whether to use future_map().
+#' @param ... arguments to pass on to \link[furrr]{future_map}.
 #'
 #' @return A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.
 #' @export
@@ -304,7 +298,7 @@ snotel_download_wy <- snotel_download_wy %>%
 #' @importFrom lubridate as_date
 #'
 #' @examples
-wymSNOTEL <- function(procDV, sites = NULL) {
+wymSNOTEL <- function(procDV, sites = NULL, parallel = FALSE, ...) {
 
   if(!is.null(sites) & !missing(procDV)){stop("Can't use both Sites and procDV")}
   if(is.null(sites) & missing(procDV)){stop("Need at least one argument!")}
@@ -319,31 +313,13 @@ wymSNOTEL <- function(procDV, sites = NULL) {
 
   }
 
-  # check if the provided site index is valid
-  if (nrow(meta_data) == 0){
-    stop("no site found with the requested ID")
-  }
-
-  #create blank dataframe to store the information in
-  snotel_download_wym <- data.frame()
-
-  #run for loop over api, pulling necessary data.
-
-  for (i in 1:nrow(meta_data)){
-    # loop over selection, and download the data
-
-    tryCatch({
-
-      # some feedback on the download progress
-      message(sprintf("Downloading site: %s, with id: %s\n",
-                      meta_data$site_id[i],
-                      meta_data$site_name[i]))
+      snotel_wym <- function(md){
       # download url (metric by default!)
       base_url <- paste0(
         "https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customMultiTimeSeriesGroupByStationReport/monthly/start_of_period/",
-        meta_data$site_id[i], ":",
-        meta_data$state[i], ":",
-        meta_data$network[i],
+        md$site_id, ":",
+        md$state, ":",
+        md$network,
         '%7Cid=""%7Cname/POR_BEGIN,POR_END/WTEQ::value:daily%20MEAN,WTEQ::value:daily%20MAX,SNWD::value:daily%20MEAN,SNWD::value:daily%20MAX'
       )
 
@@ -352,12 +328,6 @@ wymSNOTEL <- function(procDV, sites = NULL) {
                          httr::write_disk(path = file.path(tempdir(),
                                                            "snotel_tmp.csv"),
                                           overwrite = TRUE))
-
-      # catch error and remove resulting zero byte files
-      if (httr::http_error(error)) {
-        warning(sprintf("Downloading site %s failed, removed empty file.",
-                        meta_data$site_id[i]))
-      }
 
       # read in the snotel data
       df <- readr::read_csv(file.path(tempdir(),"snotel_tmp.csv"),comment = "#", col_types = readr::cols())
@@ -375,15 +345,32 @@ wymSNOTEL <- function(procDV, sites = NULL) {
       # rename columns
       colnames(df) <- snotel_columns
 
+      df <- df %>% dplyr::mutate(site_id = md$site_id)
 
-      df <- cbind.data.frame(meta_data[i,], df, row.names = NULL)
-
-      #combine df with blank dataframe (usgs_download_hourly)
-
-      snotel_download_wym <- plyr::rbind.fill(snotel_download_wym, df)
+      df <- left_join(md, df, by = 'site_id')
 
 
-    }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+      }
+
+      if(isTRUE(parallel)){
+
+        snotel_download_wym <- meta_data %>%
+          split(.$site_id) %>%
+          furrr::future_map(safely(~snotel_wym(.))) %>%
+          purrr::keep(~length(.) != 0) %>%
+          purrr::map(~.x[['result']]) %>%
+          plyr::rbind.fill()
+
+      } else {
+
+        snotel_download_wym <- meta_data %>%
+          split(.$site_id) %>%
+          purrr::map(safely(~snotel_wym(.)))%>%
+          purrr::keep(~length(.) != 0) %>%
+          purrr::map(~.x[['result']]) %>%
+          plyr::rbind.fill()
+
+      }
 
     snotel_download_wym <- snotel_download_wym   %>%
       mutate(year = str_extract(date, "(\\d+)"),
@@ -394,9 +381,7 @@ wymSNOTEL <- function(procDV, sites = NULL) {
              Date = str_c(year,month,day, sep = "-"),
              Date = as_date(Date),
              wy = waterYear(Date,numeric = TRUE))
-  }
 
-  return(snotel_download_wym)
 
 }
 
@@ -443,7 +428,7 @@ monthSNOTEL <- function(procDV) {
 #' @export
 #'
 #' @examples
-hourlySNOTEL <- function(procDV, sites = NULL,  days = 7) {
+hourlySNOTEL <- function(procDV, sites = NULL,  days = 7, parallel = FALSE, ...) {
 
   if(length(days) > 1){stop("only length 1 vector")}
   if(!is.null(sites) & !missing(procDV)){stop("Can't use both Sites and procDV")}
@@ -465,28 +450,13 @@ hourlySNOTEL <- function(procDV, sites = NULL,  days = 7) {
   }
 
   choice_days <- days
-
-  #create blank dataframe to store the information in
-  snotel_download_hourly <- data.frame()
-
-  #run for loop over api, pulling necessary data.
-
-  for (i in 1:nrow(meta_data)){
-    # loop over selection, and download the data
-
-    tryCatch({
-
-      # some feedback on the download progress
-      message(sprintf("Downloading site: %s, with id: %s\n",
-                      meta_data$site_id[i],
-                      meta_data$site_name[i]))
-
+snotel_hourly <- function(md, choice_days){
       # download url (metric by default!)
       base_url <- paste0(
         "https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customMultiTimeSeriesGroupByStationReport/hourly/start_of_period/",
-        meta_data$site_id[i], ":",
-        meta_data$state[i], ":",
-        meta_data$network[i],
+        md$site_id, ":",
+        md$state, ":",
+        md$network,
         "%7Cid=\"\"%7Cname/-",round(choice_days*24,0),",0/WTEQ::value,PREC::value,TMAX::value,TMIN::value,TAVG::value,PRCP::value,SNWD::value"
       )
 
@@ -496,12 +466,6 @@ hourlySNOTEL <- function(procDV, sites = NULL,  days = 7) {
                                                            "snotel_tmp.csv"),
                                           overwrite = TRUE))
 
-      # catch error and remove resulting zero byte files
-      if (httr::http_error(error)) {
-        warning(sprintf("Downloading site %s failed, removed empty file.",
-                        meta_data$site_id[i]))
-      }
-
       # read in the snotel data
       df <- utils::read.table(file.path(tempdir(),"snotel_tmp.csv"),
                               header = TRUE,
@@ -509,21 +473,30 @@ hourlySNOTEL <- function(procDV, sites = NULL,  days = 7) {
                               stringsAsFactors = FALSE)
 
       # subsitute column names
-      df <- snotel_wild_custom(df)
+      df <- snotel_wild_custom(df) %>% dplyr::mutate(site_id = md$site_id)
 
-      df <- cbind.data.frame(meta_data[i,], df, row.names = NULL)
+      df <- dplyr::left_join(md,df, by = 'site_id')
+    }
 
-      #combine df with blank dataframe (usgs_download_hourly)
+if(isTRUE(parallel)){
 
-      snotel_download_hourly <- plyr::rbind.fill(snotel_download_hourly, df)
+  snotel_hourly_download <- meta_data %>%
+    split(.$site_id) %>%
+    furrr::future_map(safely(~snotel_hourly(., choice_days = choice_days))) %>%
+    purrr::keep(~length(.) != 0) %>%
+    purrr::map(~.x[['result']]) %>%
+    plyr::rbind.fill()
 
+} else {
 
-    }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+  snotel_hourly_download <- meta_data %>%
+    split(.$site_id) %>%
+    purrr::map(safely(~snotel_hourly(., choice_days = choice_days)))%>%
+    purrr::keep(~length(.) != 0) %>%
+    purrr::map(~.x[['result']]) %>%
+    plyr::rbind.fill()
 
-  }
-
-  return(snotel_download_hourly)
-
+}
 }
 
 
@@ -858,7 +831,7 @@ get_SNOTEL = function(AOI){
 
   AOI_type <- sf::st_geometry_type(AOI)
 
- meta_sf <- wildlandhydRo::meta_data %>% mutate(row.id = row_number()) %>%
+ meta_sf <- meta_data %>% mutate(row.id = row_number()) %>%
     sf::st_as_sf(coords = c("longitude", "latitude")) %>% sf::st_set_crs(4269)
 
   if(AOI_type == "POINT"){

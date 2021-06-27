@@ -25,8 +25,6 @@ plot_USGSfdc(
 \item{seasons}{A \code{logical} whether to split by seasons.}
 
 \item{span_season}{A \code{character} vector indicating a season, e.g. c('4-1', '6-30').}
-
-\item{...}{arguments to pass on to \link[furrr]{future_map} and \link[wildlandhydRo]{batch_USGSdv}.}
 }
 \value{
 A ggplot. Works with plotly::ggplotly.

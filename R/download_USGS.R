@@ -472,7 +472,7 @@ hourlyUSGS <- function(procDV, sites = NULL, days = 7, parallel = FALSE, ...) {
 #' @param procDV A previously created \link[wildlandhydRo]{batch_USGSdv} object.
 #' @param sites A \code{character} USGS NWIS site.
 #' @param wy A \code{numeric} or \code{character} water year, e.g. 1990:2000, 1990, or c("1990", "2000").
-#' @param parallel \code{logical} indicating whether to use future_map().
+#' @param parallel \code{logical} indicating whether to use future_map() if using \code{sites} argument.
 #' @param ... arguments to pass on to \link[furrr]{future_map} and \link[wildlandhydRo]{batch_USGSdv}.
 #' @importFrom dplyr rename filter
 #' @importFrom ggplot2 ggplot geom_line theme_light labs scale_color_manual facet_wrap
@@ -532,50 +532,87 @@ if(length(unique(usgs_baseflow$Station))>1){
 
 #' USGS Report Daily
 #' @description This function uses the \link[dataRetrieval]{readNWISstat} to gather daily
-#' statistics like quantiles. Be aware, the \code{current_daily_mean_flow} variable is calculated from the \link[wildlandhydRo]{hourlyUSGS}
+#' statistics like quantiles/percentiles. Be aware, the \code{current_daily_mean_flow} variable is calculated from the \link[wildlandhydRo]{hourlyUSGS}
 #' by taking the daily mean of the hourly data. Thus, the \code{current_daily_mean_flow} will look different than the \link[wildlandhydRo]{hourlyUSGS} and
-#' \href{https://waterdata.usgs.gov/nwis/rt}{USGS Current Water Data} site instantaneous values.
+#' \href{https://waterdata.usgs.gov/nwis/rt}{USGS Current Water Data} site instantaneous values as it should.
 #' @param procDV A previously created \link[wildlandhydRo]{batch_USGSdv} object.
 #' @param sites A \code{character} USGS NWIS site.
 #' @param days A \code{numeric} input of days.
+#' @param parallel \code{logical} indicating whether to use future_map().
+#' @param ... arguments to pass on to \link[furrr]{future_map}.
 #' @importFrom dataRetrieval readNWISstat
 #' @importFrom lubridate mday
 #' @importFrom dplyr tibble
 #' @return
 #' @export
 #'
-reportUSGSdv <- function(procDV, sites = NULL, days = 10) {
+reportUSGSdv <- function(procDV, sites = NULL, days = 10, parallel = FALSE, ...) {
 
 
-  if(missing(procDV)) {
+  if(is.null(sites)) {sites <- unique(procDV[['site_no']])}
+  choice_days <- days
+  #create iteration value
 
-    usgs_statsdv <- data.frame()
+  if(!missing(procDV)){
+
+    sites <- unique(procDV$site_no)
+    station <- unique(procDV$Station)
+
+  }
+
+  if(!is.null(sites) & length(sites) == 1){
+
+    sites <- unique(sites)
+
+    station <- readNWISsite(sites) %>% select(station_nm) %>% as.character()
+
+  }
+
+  if(!is.null(sites) & length(sites) > 1) {
+
+    sites <- unique(sites)
+
+    station <- vector()
     for(i in 1:length(sites)){
 
-      usgs_st <- dataRetrieval::readNWISstat(sites[[i]], parameterCd = "00060", statType = 'all') %>%
-      mutate(Station = readNWISsite(sites[[i]]) %>% select(station_nm) %>% as.character())
-
-      usgs_statsdv <- plyr::rbind.fill(usgs_st,usgs_statsdv)
+      station_1 <- readNWISsite(sites[[i]]) %>% select(station_nm) %>% as.character()
+      station <- append(station,station_1)
     }
+
+  }
+
+  #create blank dataframe to store the information in
+  site_station_days <- data.frame(sites = sites, station = station, choice_days = rep(choice_days))
+
+
+    usgs_statsdv_fun <- function(data) {dataRetrieval::readNWISstat(data$sites, parameterCd = "00060", statType = 'all') %>%
+      mutate(Station = readNWISsite(data$sites) %>% select(station_nm) %>% as.character())}
+
+  #run over api, pulling necessary data.
+
+  if(isTRUE(parallel)){
+
+    usgs_statsdv <- site_station_days %>%
+      split(.$sites) %>%
+      furrr::future_map(safely(~usgs_statsdv_fun(.))) %>%
+      purrr::keep(~length(.) != 0) %>%
+      purrr::map(~.x[['result']]) %>%
+      plyr::rbind.fill()
 
   } else {
 
-          sites_proc <- unique(procDV$site_no)
-
-          usgs_statsdv <- data.frame()
-          for(i in 1:length(sites_proc)){
-            usgs_st <- dataRetrieval::readNWISstat(sites_proc[[i]], parameterCd = "00060", statType = 'all') %>%
-              mutate(Station = readNWISsite(sites_proc[[i]]) %>% select(station_nm) %>% as.character())
-            usgs_statsdv <- plyr::rbind.fill(usgs_st,usgs_statsdv)
-          }
-
-
+    usgs_statsdv <- site_station_days %>%
+      split(.$sites) %>%
+      purrr::map(safely(~usgs_statsdv_fun(.)))%>%
+      purrr::keep(~length(.) != 0) %>%
+      purrr::map(~.x[['result']]) %>%
+      plyr::rbind.fill()
 
   }
 
 #join it with original
 
-  u_hour <- hourlyUSGS(usgs_statsdv, days = days)
+  u_hour <- hourlyUSGS(usgs_statsdv, days = days, ...)
   u_hour <- u_hour %>%
     mutate(Date = lubridate::as_date(date),
            year = year(Date),
@@ -600,7 +637,6 @@ reportUSGSdv <- function(procDV, sites = NULL, days = 10) {
 
   usgs_statsdv <- usgs_statsdv %>% left_join(u_hour, by = c("Station", "month_day"))
 
-  print(tibble(usgs_statsdv))
 }
 
 
@@ -669,43 +705,80 @@ if(nrow(filter(usgs_statsmv, year_nu %in% stringr::str_extract(Sys.time(), "^.{4
 #'
 #' @param report A previously created \link[wildlandhydRo]{reportUSGSdv} or \link[wildlandhydRo]{reportUSGSmv} object.
 #' @param time A \code{character} vector indicating "daily" or "month".
+#' @param smooth.span A \code{numeric} value indicating the smoothing parameter for the \link[stats]{loess} function. If NULL (default) no smoothing will happen.
 #' @importFrom dplyr all_of
 #' @importFrom stringr str_replace_all
 #' @return A ggplot object
 #' @export
 #'
 #' @examples
-plot_reportUSGS <- function(report, time = "daily") {
+plot_reportUSGS <- function(report, time = "daily", smooth.span = NULL) {
 
   if(missing(report))stop("Need a report dataframe.")
 
 
   if(time == "daily") {
 
-      per <- c("p05_va","p10_va","p20_va","p25_va","p50_va","p75_va","p80_va","p90_va","p95_va")
-      percentiles <- report %>%
-        pivot_longer(cols = all_of(per), names_to = "Percentile") %>%
-        mutate(Percentile = str_replace_all(Percentile, "_va|p", ""),
-               month_day = fct_reorder(month_day, Date, .desc = T))
+    sty.rep <- function(data, breaks, title) {
 
-if(length(unique(percentiles$Station))>1){
-      ggplot(percentiles, aes(Percentile, value))+
-        geom_col(fill = "white", aes(color = Station)) +
-        geom_hline(aes(yintercept = current_daily_mean_flow, color = Station), linetype = 3, size = 1) +
+      data +
+        annotation_logticks(sides="l") +
         theme_bw() +
-        labs(color = "Current Mean Daily Reading", title = "Daily Stats: POR Percentiles and Current Flow.") +
-        facet_wrap(~month_day, scales = "free")
-} else {
+        labs(title= title,
+             y = paste("Discharge")) +
+        scale_fill_manual(name="Percentiles",breaks = breaks, labels = c("25<sup>th</sup> - 75<sup>th</sup>",
+                                                                         "10<sup>th</sup> - 25<sup>th</sup>",
+                                                                         "5<sup>th</sup> - 10<sup>th</sup>",
+                                                                         "0 - 5<sup>th</sup>"),
+                          values = rev(c("#FF0000","#FFA500","#FFFF00","#006400")))+
+        guides(fill = guide_legend(override.aes = list(alpha = .15))) +
+        scale_color_manual(name = "", values = "black") +
+        theme(legend.position="bottom",
+              legend.text = ggtext::element_markdown(),
+              axis.ticks.x=element_blank(),
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank())
+    }
 
-  ggplot(percentiles, aes(Percentile, value))+
-    geom_col(fill = "white", color = "black") +
-    geom_hline(aes(yintercept = current_daily_mean_flow, color = Station), linetype = 3, size = 1) +
-    theme_bw() +
-    labs(color = "Current Reading", title = "Daily Stats: POR Percentiles and Current Flow.") +
-    facet_wrap(~month_day, scales = "free")
+    percentiles <- report %>%
+      rename_with(.cols = contains('_va'),.fn = ~str_replace_all(., "_va", "")) %>%
+      mutate(month_day = fct_reorder(month_day, Date, .desc = T),
+             day.of.year = as.numeric(strftime(Date,
+                                               format = "%j")))
+if(!is.null(smooth.span)){
+    percentiles <- percentiles %>%
+      group_by(Station) %>%
+      nest() %>%
+      mutate(smooth = map(data, ~smooth_func(.,smooth.span))) %>%
+      unnest('smooth') %>% ungroup()
 }
+    title.text <- paste0(unique(percentiles$Station), "\n",
+                         "Date of plot = ",min(percentiles$Date),' to ', max(percentiles$Date))
 
-  } else if (time == "month") {
+    label.text <- c("Normal","Drought Watch","Drought Warning",'Drought Emergency')
+
+    simple.plot <- ggplot(data = percentiles, aes(x = Date)) +
+      geom_ribbon(aes(ymin = p25, ymax = p75, fill = "Normal"), alpha = 0.5) +
+      geom_ribbon(aes(ymin = p10, ymax = p25, fill = "Drought Watch"), alpha = 0.5) +
+      geom_ribbon(aes(ymin = p05, ymax = p10, fill = "Drought Warning"), alpha = 0.5) +
+      geom_ribbon(aes(ymin = min, ymax = p05, fill = 'Drought Emergency')) +
+      scale_y_log10(labels = scales::comma) +
+      geom_line( aes(x=Date, y=current_daily_mean_flow, color = 'Daily Flow'),size = 0.75)
+
+    styled.plot <- sty.rep(simple.plot, breaks = label.text, title = title.text)
+
+
+
+     if(length(unique(percentiles$Station))>1){
+         styled.plot +
+         facet_wrap(~Station, scales = "free") +
+         labs(title = '')
+      } else {
+
+         styled.plot
+      }
+
+       } else if (time == "month") {
 
 
     per <- c("p05_va","p10_va","p20_va","p25_va","p50_va","p75_va","p80_va","p90_va","p95_va")
@@ -748,23 +821,24 @@ if(length(unique(percentiles$Station))>1){
 #' @param rolln A \code{numeric} number of days in moving average
 #' @param startDate A \code{character} indicating the start date.
 #' @param endDate A \code{character} indicating the end date.
+#' @param smooth.span A \code{numeric} value indicating the smoothing parameter for the \link[stats]{loess} function. If NULL (default) no smoothing will happen.
 #' @return A ggplot. Works with plotly::ggplotly.
 #' @export
 #'
 #'
 #'
-plot_USGSdrought <- function(procDV, site = NULL, rolln = 30, startDate = '2010-01-01', endDate = '2015-01-01') {
+plot_USGSdrought <- function(procDV, site = NULL, rolln = 30, startDate = '2010-01-01', endDate = '2015-01-01', smooth.span = NULL) {
 if(is.null(rolln)) stop("Need 'rolln' for moving average")
   if(rolln %in% c(0, Inf, -Inf))stop({"rolln needs to be positive."})
 if(is.null(site) & missing(procDV)) stop("Need at least one argument")
 
   if(is.null(site)){
 
-  dr_plot <- laura_DeCicco_fun(procDV = {{ procDV }}, rolln = {{ rolln }}, startDate = {{ startDate }}, endDate = {{ endDate }})
+  dr_plot <- laura_DeCicco_fun(procDV = {{ procDV }}, rolln = {{ rolln }}, startDate = {{ startDate }}, endDate = {{ endDate }}, smooth.span = {{smooth.span}})
 
   } else if (missing(procDV)){
 
-    dr_plot <- laura_DeCicco_fun(site = {{ site }}, rolln = {{ rolln }}, startDate = {{ startDate }}, endDate = {{ endDate }})
+    dr_plot <- laura_DeCicco_fun(site = {{ site }}, rolln = {{ rolln }}, startDate = {{ startDate }}, endDate = {{ endDate }}, smooth.span = {{smooth.span}})
   }
 
   dr_plot$plot
@@ -779,16 +853,14 @@ if(is.null(site) & missing(procDV)) stop("Need at least one argument")
 #' @param site A USGS NWIS site. \code{optional}
 #' @param startDate A \code{character} indicating the start date. minimum (default).
 #' @param endDate A \code{character} indicating the end date. maximum (default)
-#' @param seasons A \code{logical} whether to split by seasons.
-#' @param span_season A \code{character} vector indicating a season, e.g. c('4-1', '6-30').
+#' @param span_season A \code{character} vector indicating a season, e.g. c('4-1', '6-30'). If NULL (default), yearly FDC will be produced.
 #'
 #' @return A ggplot. Works with plotly::ggplotly.
 #' @export
 #'
 #'
 #'
-plot_USGSfdc <- function(procDV, site = NULL, startDate = '', endDate = '',
-                         seasons = FALSE, span_season = NULL) {
+plot_USGSfdc <- function(procDV, site = NULL, startDate = '', endDate = '',span_season = NULL) {
 
   if(is.null(site) & missing(procDV)) stop("Need at least one argument")
 
@@ -817,7 +889,7 @@ if(startDate == '' & endDate != ''){
 
   }
 
-  if(seasons == TRUE) {
+  if(!is.null(span_season)) {
 
     span1 <- as.Date(span_season[1], '%m-%d')
     span2 <- as.Date(span_season[2], '%m-%d')

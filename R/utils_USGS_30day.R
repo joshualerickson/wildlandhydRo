@@ -3,6 +3,8 @@
 #' @param procDV A previously created proc DV
 #' @param site A USGS NWIS site
 #' @param rolln Number of days in moving average
+#' @param startDate A character date, e.g. '2000-01-01'
+#' @param endDate A character date, e.g. '2002-12-25'
 #'
 #'
 #' @return
@@ -10,7 +12,7 @@
 #' @importFrom dplyr summarize bind_rows
 #' @importFrom zoo rollmean
 #' @export
-laura_DeCicco_fun <- function(procDV, site = NULL, rolln = 30, startDate = '2010-01-01', endDate = '2015-01-01') {
+laura_DeCicco_fun <- function(procDV, site = NULL, rolln = 30, startDate = '2010-01-01', endDate = '2015-01-01', smooth.span = NULL) {
 
   if(missing(procDV) & is.null(site)) stop("Need at least one argument")
 
@@ -51,8 +53,17 @@ laura_DeCicco_fun <- function(procDV, site = NULL, rolln = 30, startDate = '2010
               p25 = quantile(rollMean, probs = .25, na.rm = TRUE),
               p10 = quantile(rollMean, probs = 0.1, na.rm = TRUE),
               p05 = quantile(rollMean, probs = 0.05, na.rm = TRUE),
-              p00 = quantile(rollMean, probs = 0, na.rm = TRUE))
+              p00 = quantile(rollMean, probs = 0, na.rm = TRUE)) %>%
+    ungroup()
 
+  if(!is.null(smooth.span)){
+    summaryQ <- summaryQ %>%
+    mutate( p75 = predict(loess(p75~day.of.year, data = percentiles, span = smooth.span)),
+            p25 = predict(loess(p25~day.of.year, data = percentiles, span = smooth.span)),
+            p10 = predict(loess(p10~day.of.year, data = percentiles, span = smooth.span)),
+            p05 = predict(loess(p05~day.of.year, data = percentiles, span = smooth.span)),
+            p00 = predict(loess(p00~day.of.year, data = percentiles, span = smooth.span)))
+  }
 #maybe make this more dynamic, e.g. allow for the user to select a date range.
   startDate_range = startDate %>% stringr::str_sub(end = 4) %>% as.numeric()
   endDate_range = endDate %>% stringr::str_sub(end = 4) %>% as.numeric()

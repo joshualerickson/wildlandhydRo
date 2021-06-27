@@ -9,7 +9,8 @@ plot_USGSdrought(
   site = NULL,
   rolln = 30,
   startDate = "2010-01-01",
-  endDate = "2015-01-01"
+  endDate = "2015-01-01",
+  smooth.span = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ plot_USGSdrought(
 \item{startDate}{A \code{character} indicating the start date.}
 
 \item{endDate}{A \code{character} indicating the end date.}
+
+\item{smooth.span}{A \code{numeric} value indicating the smoothing parameter for the \link[stats]{loess} function. If NULL (default) no smoothing will happen.}
 }
 \value{
 A ggplot. Works with plotly::ggplotly.
