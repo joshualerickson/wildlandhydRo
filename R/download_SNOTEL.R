@@ -87,6 +87,8 @@ snotel_report_custom <- function(df) {
 #' Process SNOTEL daily values
 #'
 #' @param sites A vector of SNOTEL site locations, e.g. \code{c("311", "500")}
+#' @param parallel \code{logical} indicating whether to use future_map().
+#' @param ... arguments to pass on to \link[furrr]{future_map}.
 #' @description This function gets daily snotel data from \url{https://wcc.sc.egov.usda.gov/reportGenerator/} website. This
 #' function is similar to \link[snotelr]{snotel_download} except it includes english units and adds snow depth as a variable.
 #'
@@ -108,7 +110,7 @@ snotel_report_custom <- function(df) {
 #' @export
 #'
 
-batch_SNOTELdv <- function(sites) {
+batch_SNOTELdv <- function(sites, parallel = FALSE, ...) {
 
 
   # download meta-data
@@ -120,22 +122,14 @@ batch_SNOTELdv <- function(sites) {
   }
 
   # loop over selection, and download the data
-  snotel_data <- data.frame()
 
-    for (i in 1:nrow(meta_data)) {
-
-    tryCatch({
-                     # some feedback on the download progress
-                           message(sprintf("Downloading site: %s, with id: %s\n",
-                                           meta_data$site_name[i],
-                                           meta_data$site_id[i]))
-
+                snotel_daily <- function(md) {
                            # download url (metric by default!)
                            base_url <- paste0(
                              "https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/",
-                             meta_data$site_id[i], ":",
-                             meta_data$state[i], ":",
-                             meta_data$network[i],
+                             md$site_id, ":",
+                             md$state, ":",
+                             md$network,
                              "%7Cid=%22%22%7Cname/POR_BEGIN,POR_END/WTEQ::value,PREC::value,TMAX::value,TMIN::value,TAVG::value,PRCP::value,SNWD::value"
                            )
 
@@ -148,7 +142,7 @@ batch_SNOTELdv <- function(sites) {
                            # catch error and remove resulting zero byte files
                            if (httr::http_error(error)) {
                              warning(sprintf("Downloading site %s failed, removed empty file.",
-                                             meta_data$site_id[i]))
+                                             md$site_id))
                            }
 
                            # read in the snotel data
@@ -158,16 +152,34 @@ batch_SNOTELdv <- function(sites) {
                                                    stringsAsFactors = FALSE)
 
                            # subsitute column names
-                           df <- snotel_wild_custom(df)
+                           df <- wildlandhydRo:::snotel_wild_custom(df)
 
-                           df <- cbind.data.frame(meta_data[i,], df, row.names = NULL)
+                           df <- cbind.data.frame(md, df, row.names = NULL)
 
                          snotel_data <- plyr::rbind.fill(snotel_data, df)
+                }
 
-                         }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-    }
+                if(isTRUE(parallel)){
+
+                  snotel_data <- meta_data %>%
+                    split(.$site_id) %>%
+                    furrr::future_map(safely(~snotel_daily(.))) %>%
+                    purrr::keep(~length(.) != 0) %>%
+                    purrr::map(~.x[['result']]) %>%
+                    plyr::rbind.fill()
+
+                } else {
+
+                  snotel_data <- meta_data %>%
+                    split(.$site_id) %>%
+                    purrr::map(safely(~snotel_daily(.)))%>%
+                    purrr::keep(~length(.) != 0) %>%
+                    purrr::map(~.x[['result']]) %>%
+                    plyr::rbind.fill()
+
+                }
   snotel_data <- snotel_data %>%
-    mutate(Date = lubridate::parse_date_time(date, orders = c("%y-%m-%d", "%y%m%d", "%y-%m-%d %H:%M")),
+    dplyr::mutate(Date = lubridate::parse_date_time(date, orders = c("%y-%m-%d", "%y%m%d", "%y-%m-%d %H:%M")),
            year = lubridate::year(Date),
            month = lubridate::month(Date),
            month_abb = factor(month.abb[month], levels = month.abb),

@@ -4,7 +4,14 @@
 \alias{batch_USGSdv}
 \title{Process USGS daily values}
 \usage{
-batch_USGSdv(sites, parameterCd = "00060", start_date = "", end_date = "")
+batch_USGSdv(
+  sites,
+  parameterCd = "00060",
+  start_date = "",
+  end_date = "",
+  parallel = FALSE,
+  ...
+)
 }
 \arguments{
 \item{sites}{A vector of USGS NWIS sites}
@@ -14,6 +21,10 @@ batch_USGSdv(sites, parameterCd = "00060", start_date = "", end_date = "")
 \item{start_date}{A character of date format, e.g. \code{"1990-09-01"}}
 
 \item{end_date}{A character of date format, e.g. \code{"1990-09-01"}}
+
+\item{parallel}{\code{logical} indicating whether to use future_map().}
+
+\item{...}{arguments to pass on to \link[furrr]{future_map}.}
 }
 \value{
 A \code{data.frame} with daily mean flow and added meta-data.

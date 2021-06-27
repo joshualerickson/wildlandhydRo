@@ -4,10 +4,14 @@
 \alias{batch_SNOTELdv}
 \title{Process SNOTEL daily values}
 \usage{
-batch_SNOTELdv(sites)
+batch_SNOTELdv(sites, parallel = FALSE, ...)
 }
 \arguments{
 \item{sites}{A vector of SNOTEL site locations, e.g. \code{c("311", "500")}}
+
+\item{parallel}{\code{logical} indicating whether to use future_map().}
+
+\item{...}{arguments to pass on to \link[furrr]{future_map}.}
 }
 \value{
 A \code{data.frame} with SNOTEL metrics that capture the following variables: \code{snow_water_equivalent},

@@ -4,7 +4,7 @@
 \alias{hourlyUSGS}
 \title{Hourly USGS}
 \usage{
-hourlyUSGS(procDV, sites = NULL, days = 7)
+hourlyUSGS(procDV, sites = NULL, days = 7, parallel = FALSE, ...)
 }
 \arguments{
 \item{procDV}{A previously created \link[wildlandhydRo]{batch_USGSdv} object.}
@@ -12,6 +12,10 @@ hourlyUSGS(procDV, sites = NULL, days = 7)
 \item{sites}{A \code{vector} of USGS NWIS sites. \code{optional}}
 
 \item{days}{A \code{numeric} input of days.}
+
+\item{parallel}{\code{logical} indicating whether to use future_map().}
+
+\item{...}{arguments to pass on to \link[furrr]{future_map}.}
 }
 \value{
 

@@ -4,17 +4,21 @@
 \alias{reportUSGSdv}
 \title{USGS Report Daily}
 \usage{
-reportUSGSdv(procDV, sites = NULL)
+reportUSGSdv(procDV, sites = NULL, days = 10)
 }
 \arguments{
 \item{procDV}{A previously created \link[wildlandhydRo]{batch_USGSdv} object.}
 
 \item{sites}{A \code{character} USGS NWIS site.}
+
+\item{days}{A \code{numeric} input of days.}
 }
 \value{
 
 }
 \description{
 This function uses the \link[dataRetrieval]{readNWISstat} to gather daily
-statistics like quantiles.
+statistics like quantiles. Be aware, the \code{current_daily_mean_flow} variable is calculated from the \link[wildlandhydRo]{hourlyUSGS}
+by taking the daily mean of the hourly data. Thus, the \code{current_daily_mean_flow} will look different than the \link[wildlandhydRo]{hourlyUSGS} and
+\href{https://waterdata.usgs.gov/nwis/rt}{USGS Current Water Data} site instantaneous values.
 }

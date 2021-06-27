@@ -4,12 +4,16 @@
 \alias{monthUSGS}
 \title{Month-Only Stats (USGS)}
 \usage{
-monthUSGS(procDV, sites = NULL)
+monthUSGS(procDV, sites = NULL, parallel = FALSE, ...)
 }
 \arguments{
 \item{procDV}{A previously created \link[wildlandhydRo]{batch_USGSdv} object.}
 
 \item{sites}{A \code{character} vector with NWIS site numbers.}
+
+\item{parallel}{\code{logical} indicating whether to use future_map().}
+
+\item{...}{arguments to pass on to \link[furrr]{future_map} and \link[wildlandhydRo]{batch_USGSdv}.}
 }
 \value{
 A \code{data.frame}

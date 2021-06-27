@@ -4,7 +4,7 @@
 \alias{plot_baseflow}
 \title{Plot Water Year Base-flow and Total Flow}
 \usage{
-plot_baseflow(procDV, sites = NULL, wy)
+plot_baseflow(procDV, sites = NULL, wy, parallel = FALSE, ...)
 }
 \arguments{
 \item{procDV}{A previously created \link[wildlandhydRo]{batch_USGSdv} object.}
@@ -12,6 +12,10 @@ plot_baseflow(procDV, sites = NULL, wy)
 \item{sites}{A \code{character} USGS NWIS site.}
 
 \item{wy}{A \code{numeric} or \code{character} water year, e.g. 1990:2000, 1990, or c("1990", "2000").}
+
+\item{parallel}{\code{logical} indicating whether to use future_map().}
+
+\item{...}{arguments to pass on to \link[furrr]{future_map} and \link[wildlandhydRo]{batch_USGSdv}.}
 }
 \value{
 

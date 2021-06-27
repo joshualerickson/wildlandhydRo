@@ -9,8 +9,7 @@
 #' @importFrom stats quantile loess predict
 #' @importFrom dplyr summarize bind_rows
 #' @importFrom zoo rollmean
-#'
-#' @examples
+#' @export
 laura_DeCicco_fun <- function(procDV, site = NULL, rolln = 30, startDate = '2010-01-01', endDate = '2015-01-01') {
 
   if(missing(procDV) & is.null(site)) stop("Need at least one argument")
@@ -55,63 +54,68 @@ laura_DeCicco_fun <- function(procDV, site = NULL, rolln = 30, startDate = '2010
               p00 = quantile(rollMean, probs = 0, na.rm = TRUE))
 
 #maybe make this more dynamic, e.g. allow for the user to select a date range.
-  startDate = startDate %>% stringr::str_sub(end = 4) %>% as.numeric()
-  endDate = endDate %>% stringr::str_sub(end = 4) %>% as.numeric()
-  range = endDate-startDate
+  startDate_range = startDate %>% stringr::str_sub(end = 4) %>% as.numeric()
+  endDate_range = endDate %>% stringr::str_sub(end = 4) %>% as.numeric()
+  range = endDate_range-startDate_range
   summary_drought <- data.frame()
   for (i in 0:range){
 
     sum_date <- summaryQ %>%
       mutate(Date = as_date(day.of.year - 1,
-                            origin = paste0(endDate-i,"-01-01")))
+                            origin = paste0(endDate_range-i,"-01-01")))
 
     summary_drought <- plyr::rbind.fill(sum_date, summary_drought)
   }
 
 
   latest.years <- dailyQ %>%
-    filter(Date >= as_date(paste0(startDate,"-01-01")), Date <= as_date(paste0(endDate, '-01-01')))
+    filter(Date >= as_date(startDate), Date <= as_date(endDate))
 
-  title.text <- paste0(dailyQ$Station,"\n",
-                       "Provisional Data - Subject to change\n",
+  title.text <- paste0(dailyQ$Station, "\n",
                        "Record Start = ", min(dailyQ$Date),
                        "  Number of years = ",
                        as.integer(as.numeric(difftime(time1 = max(dailyQ$Date),
                                                       time2 = min(dailyQ$Date),
                                                       units = "weeks"))/52.25),
-                       "\nDate of plot = ",startDate,' to ',endDate,
-                       "  Drainage Area = ",dailyQ$drainage_area, " mi^2")
+                       "\nDate of plot = ",startDate,' to ', endDate,
+                       "  Drainage Area = ",scales::comma(dailyQ$drainage_area), " mi^2")
 
   label.text <- c("Normal","Drought Watch","Drought Warning","Drought Emergency")
 
   simple.plot <- ggplot(data = summary_drought, aes(x = Date)) +
-    geom_ribbon(aes(ymin = p25, ymax = p75, fill = "Normal")) +
-    geom_ribbon(aes(ymin = p10, ymax = p25, fill = "Drought Watch")) +
-    geom_ribbon(aes(ymin = p05, ymax = p10, fill = "Drought Warning")) +
-    geom_ribbon(aes(ymin = p00, ymax = p05, fill = "Drought Emergency")) +
+    geom_ribbon(aes(ymin = p25, ymax = p75, fill = "Normal"), alpha = 0.5) +
+    geom_ribbon(aes(ymin = p10, ymax = p25, fill = "Drought Watch"), alpha = 0.5) +
+    geom_ribbon(aes(ymin = p05, ymax = p10, fill = "Drought Warning"), alpha = 0.5) +
+    geom_ribbon(aes(ymin = p00, ymax = p05, fill = "Drought Emergency"), alpha = 0.5) +
     scale_y_log10() +
-    geom_line(data = latest.years, aes(x=Date, y=rollMean, color = paste0(30,"-Day Mean")),size = .75)
+    geom_line(data = latest.years, aes(x=Date, y=rollMean, color = if(rolln > 1){paste0(rolln,"-Day Mean")}else{paste('Daily Flow')}),size = 0.75)
 
-  styled.plot <- sty.p(simple.plot, breaks = label.text, title = title.text)
+  styled.plot <- sty.p(simple.plot, breaks = label.text, rolln = rolln,title = title.text)
 
-  styled.plot
+  list(plot = styled.plot, summary_drought = summary_drought, latest.years = latest.years )
 
 
 }
 
 
-sty.p <- function(data, breaks, title) {
+sty.p <- function(data, breaks, rolln,title) {
 
   data +
+    scale_y_log10(labels = scales::comma) +
   annotation_logticks(sides="l") +
   theme_bw() +
-  theme(axis.ticks.x=element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank()) +
-  labs(title=title,
-       y = paste(30,"-day moving ave", x="")) +
-  scale_fill_manual(name="",breaks = breaks,
-                    values = rev(c("red","orange","yellow","darkgreen"))) +
+  labs(title= title,
+       y = paste("Discharge")) +
+    scale_fill_manual(name="Percentiles",breaks = breaks, labels = c("25<sup>th</sup> - 75<sup>th</sup>",
+                                                                     "10<sup>th</sup> - 25<sup>th</sup>",
+                                                                     "5<sup>th</sup> - 10<sup>th</sup>",
+                                                                     "0 - 5<sup>th</sup>"),
+                      values = rev(c("#FF0000","#FFA500","#FFFF00","#006400")))+
+    guides(fill = guide_legend(override.aes = list(alpha = .15))) +
   scale_color_manual(name = "", values = "black") +
-  theme(legend.position="bottom")
+  theme(legend.position="bottom",
+        legend.text = ggtext::element_markdown(),
+        axis.ticks.x=element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
 }
