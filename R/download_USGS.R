@@ -33,19 +33,23 @@ if(TRUE %in% logic){stop("Only sites with 8 character length")}
 
   prepping_USGSdv <- function(site_no) {
 
-    readNWISdv(siteNumbers = site_no,
+    gage_data <- readNWISdv(siteNumbers = site_no,
                parameterCd = parameterCd,
                startDate = start_date,
                endDate = end_date,
                statCd = "00003") %>%
-      renameNWISColumns() %>%
-      mutate(
+      renameNWISColumns()
+
+    gage_info <- tibble(
+        site_no = site_no,
         drainage_area = readNWISsite(site_no) %>% select(drain_area_va) %>% as.numeric(),
         Station = readNWISsite(site_no) %>% select(station_nm) %>% as.character(),
         lat = readNWISsite(site_no) %>% select(dec_lat_va) %>% as.numeric(),
         long = readNWISsite(site_no) %>% select(dec_long_va) %>% as.numeric(),
         altitude = readNWISsite(site_no) %>% select(alt_va) %>% as.numeric()
       )
+
+    left_join(gage_data, gage_info, by = 'site_no')
   }
 
   if(isTRUE(parallel)){
