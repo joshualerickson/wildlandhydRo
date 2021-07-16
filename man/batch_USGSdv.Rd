@@ -33,7 +33,3 @@ A \code{data.frame} with daily mean flow and added meta-data.
 This function is basically a wrapper around \link[dataRetrieval]{readNWISdv} but includes
 added variables like water year, lat/lon, station name, altitude and tidied dates.
 }
-\examples{
-
-
-}

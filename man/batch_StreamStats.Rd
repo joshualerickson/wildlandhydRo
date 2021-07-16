@@ -4,14 +4,10 @@
 \alias{batch_StreamStats}
 \title{Download Multiple Stream Stats Locations}
 \usage{
-batch_StreamStats(data = NULL, lon, lat, group, crs = 4326)
+batch_StreamStats(data, group, crs = 4326)
 }
 \arguments{
 \item{data}{A \code{data.frame} with \code{lon,lat} variables. \code{optional}}
-
-\item{lon}{A \code{numeric} vector of longitude values}
-
-\item{lat}{A \code{numeric} vector of latitude values}
 
 \item{group}{A vector to group by. \code{optional}}
 
@@ -21,7 +17,7 @@ batch_StreamStats(data = NULL, lon, lat, group, crs = 4326)
 Returns an sf (simple feature) object with associated basin characteristics.
 }
 \description{
-Takes longitude and latitude vectors and returns an sf object. Uses \link[AOI]{geocode_rev} to get
+Takes sf point object and returns catchment characteristics and watershed boundary (sf). Uses \link[AOI]{geocode_rev} to get
 the state identifier and \link[streamstats]{computeChars} and \link[streamstats]{delineateWatershed} to generate basin
 delineation(s) and characteristics,
 which use methods from \insertCite{ries2017streamstats}{wildlandhydRo}
@@ -33,8 +29,8 @@ which use methods from \insertCite{ries2017streamstats}{wildlandhydRo}
 data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
                  Lon = c(-115.54327, -114.75546, -116.05935),
                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
-
-three_sites <- batch_StreamStats(lon = data$Lon, lat = data$Lat, group = data$Site,
+data <- data \%>\% sf::st_as_sf(coords('Lon', 'Lat'))
+three_sites <- batch_StreamStats(data, group = 'Site',
                                   crs = 4326)
 
 }

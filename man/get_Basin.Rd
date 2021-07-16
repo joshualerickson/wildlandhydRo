@@ -10,8 +10,11 @@ get_Basin(sf_pt)
 \item{sf_pt}{A sf point object or atomic list.}
 }
 \value{
-An sf object.
+An sf object with added \code{comid} and \code{basin}.
 }
 \description{
-Get Basin Boundary NLDI
+This function uses the USGS water data API to link a point to a realized basin. This is
+not the same as delineating from the exact point, rather this API uses NLDI to find the closest
+basin downstream source point. There is a lot you can do with this API and I would recommend
+looking at {nhdplusTools} as that has a lot of functionality and better documentation.
 }

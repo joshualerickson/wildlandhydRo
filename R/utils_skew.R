@@ -10,7 +10,7 @@
 #'
 #' @return Skew from the \link[psych]{psych-package}
 #'
-#' @examples
+
 skewed <-
   function (x, na.rm = TRUE,type=3)
   {

@@ -1,92 +1,11 @@
 
-
-#' Delineate watersheds
-#' @description Hijacked streamstats function delineateWatershed() to add a retry() call because
-#' frequently the function will send a 'set vector 0/0' but maybe just needs to be ran again?
-#' This is a possible work-around but is likely to go away because I have suspicion it doesn't work...
-#' @param df A filtered data.frame
-#' @return hopefully a geojson feature collection. If not then either in AK or server is not responding correctly and a NULL is returned
-#' @importFrom magrittr "%>%"
-#' @importFrom purrr pluck
-
-dl_ws <- function(df){
-
-  for(i in 1:2){
-
-    dl <- tryCatch({streamstats::delineateWatershed(df$lon, df$lat, rcode = df$state, crs = df$crs)},
-                   error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-    dlt <- pluck(dl$featurecollection)
-    dl <- if(!is.null(dlt)) {dl} else NULL
-    if(!is.null(dl)) return(dl)
-
-  }
-  df
-}
-
-
-
-#' Delineate watersheds
-#' @description Hijacked streamstats function computeChars() and writeGeoJSON to run a for loop getting the geojson polygon and associated
-#' polygon stats
-#' @param watersheds A nested data.frame
-#' @param st A vector with state abbreviations
-#' @return two tibbles. one with flow stats and the other with basin stats
-#' @importFrom magrittr "%>%"
-#' @importFrom purrr pluck
-#' @importFrom streamstats computeChars writeGeoJSON
-#' @importFrom geojsonsf geojson_sf
-#' @importFrom plyr rbind.fill
-#' @importFrom dplyr tibble
-#' @importFrom sf st_as_sf
-#'
-#'
-
-get_flow_basin <- function(watersheds, st) {
-  usgs_ws_polys <- tibble()
-  usgs_flow_stats <- tibble()
-
-  for (i in 1:nrow(watersheds)) {
-    tryCatch({
-      usgs_ws <- pluck(watersheds$ws) %>% pluck(i)  %>%
-        streamstats::writeGeoJSON(., file.path(tempdir(),"ss_tmp.json")) %>%
-        geojsonsf::geojson_sf() %>% st_as_sf()
-
-      usgs_ws$group <- pluck(watersheds$group) %>% pluck(i) %>% paste()
-      usgs_ws$wkID <- watersheds$ws[[i]]$workspaceID
-      usgs_ws$state <- paste(st[[i]])
-      usgs_ws_polys <- plyr::rbind.fill(usgs_ws_polys, usgs_ws)
-
-      flow_stats <- streamstats::computeChars(workspaceID = watersheds$ws[[i]]$workspaceID, rcode = st[[i]])
-
-      flow_stats <- flow_stats$parameters
-
-      flow_stats$group <- pluck(watersheds$group) %>% pluck(i) %>% paste()
-
-      usgs_flow_stats <- plyr::rbind.fill(usgs_flow_stats, flow_stats)
-
-    }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-
-  }
-
-  bundle_list <- list(usgs_flow_stats = usgs_flow_stats, usgs_ws_polys = usgs_ws_polys)
-  return(bundle_list)
-}
-
-
-
-
-
-
-
 #' @title Download Multiple Stream Stats Locations
 #'
-#' @description Takes longitude and latitude vectors and returns an sf object. Uses \link[AOI]{geocode_rev} to get
+#' @description Takes sf point object and returns catchment characteristics and watershed boundary (sf). Uses \link[AOI]{geocode_rev} to get
 #' the state identifier and \link[streamstats]{computeChars} and \link[streamstats]{delineateWatershed} to generate basin
 #' delineation(s) and characteristics,
 #' which use methods from \insertCite{ries2017streamstats}{wildlandhydRo}
 #' @param data A \code{data.frame} with \code{lon,lat} variables. \code{optional}
-#' @param lon A \code{numeric} vector of longitude values
-#' @param lat A \code{numeric} vector of latitude values
 #' @param group A vector to group by. \code{optional}
 #' @param crs A \code{numeric} crs value
 #' @references {
@@ -109,32 +28,34 @@ get_flow_basin <- function(watersheds, st) {
 #' data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
 #'                  Lon = c(-115.54327, -114.75546, -116.05935),
 #'                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
-#'
-#' three_sites <- batch_StreamStats(lon = data$Lon, lat = data$Lat, group = data$Site,
+#' data <- data %>% sf::st_as_sf(coords('Lon', 'Lat'))
+#' three_sites <- batch_StreamStats(data, group = 'Site',
 #'                                   crs = 4326)
 #'
 #' }
 
 
 
-batch_StreamStats <- function(data = NULL,lon, lat, group, crs = 4326){
-
-  # masking
-if(!is.null(data)){
-  lon <- data %>% mutate(lon = {{ lon }}) %>% select(lon)
-  lat <- data %>% mutate(lat = {{ lat }}) %>% select(lat)
-  if(!missing(group)){group <- data %>% mutate(group = {{ group }}) %>% select(group)}
-  }
-
-  if(is.null(data)){
-
-    lon <- data.frame(lon = lon)
-    lat <- data.frame(lat = lat)
-    if(!missing(group)){group <- data.frame(group = {{ group }})}
-  }
+batch_StreamStats <- function(data, group, crs = 4326){
 
 
-  if(!nrow(lon) == nrow(lat)) {stop("lat and lon are not the same length")}
+
+    if(!'POINT' %in% sf::st_geometry_type(data)){"Need a sf POINT geometry"}
+    data <- data %>% sf::st_transform(crs = crs)
+    lon <- data.frame(lon = sf::st_coordinates(data)[,1])
+    lat <- data.frame(lat = sf::st_coordinates(data)[,2])
+    if(missing(group)){
+
+      group <- data %>%
+        sf::st_drop_geometry() %>%
+        mutate(group = dplyr::row_number()) %>%
+        select(group)
+    } else {
+
+      group <- data  %>%
+      sf::st_drop_geometry() %>%
+        select({{group}})
+    }
 
 
   # Create a vector of state abbreviations
@@ -150,83 +71,95 @@ if(!is.null(data)){
 
 # delineateWatershed ----
   # Separate into whether group is null or not
+  dl_ws <- function(df){
 
-  if (missing(group)){
+    for(i in 1:2){
 
-    usgs_raws <- cbind.data.frame(lat = lat, lon = lon, state = st, crs = crs)
+      dl <- tryCatch({streamstats::delineateWatershed(df$lon, df$lat,
+                                                      rcode = df$state,
+                                                      crs = df$crs)},
+                     error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+      dl['group'] <- df['group']
+      dlt <- pluck(dl$featurecollection)
+      dl <- if(!is.null(dlt)) {dl} else NULL
+      if(!is.null(dl)) return(dl)
+    }
+     df
+  }
 
-   watersheds <-  usgs_raws %>% mutate(group = dplyr::row_number()) %>% dplyr::group_by(group) %>%
-     nest() %>%
-     mutate(ws = map(data,~dl_ws(.)))
-
-  } else {
 
 if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon")}
 
-    usgs_raws <- cbind.data.frame(lat = lat, lon = lon, group = group, state = st, crs = crs)
+    usgs_raws <- data.frame(lat = lat, lon = lon, group = group[,1], state = st, crs = crs)
 
-    watersheds <- usgs_raws %>% group_by(group) %>%
-      nest() %>%
-  mutate(ws = map(data,~dl_ws(.)))
+    watersheds <-  usgs_raws %>%
+      split(.$group) %>%
+      furrr::future_map(safely(~dl_ws(.))) %>%
+      purrr::keep(~length(.) != 0) %>%
+      purrr::map(~.x[['result']])
+
+
+# compute basin characteristics ----
+  get_flow_basin <- function(watersheds) {
+
+    usgs_ws <- streamstats::writeGeoJSON(watersheds, file.path(tempdir(),"ss_tmp.json")) %>%
+      geojsonsf::geojson_sf() %>% st_as_sf()
+    #
+    usgs_ws <- usgs_ws %>% mutate(wkID = watersheds$workspaceID,
+                                  state = stringr::str_sub(watersheds$workspaceID,end = 2),
+                                  group = watersheds$group)
+
+    flow_stats <- streamstats::computeChars(workspaceID = usgs_ws$wkID, rcode = usgs_ws$state)
+
+    flow_stats <- flow_stats$parameters
+
+    flow_stats <- flow_stats %>% mutate(wkID = usgs_ws$wkID)
+
+    final <- left_join(usgs_ws %>% select(wkID,state, group), flow_stats, by = 'wkID')
 
   }
 
-# compute basin characteristics ----
+   final_df <- furrr::future_map(watersheds, safely(~get_flow_basin(.)))%>%
+     purrr::map(~.x[['result']]) %>% plyr::rbind.fill() %>%
+     select(code, value, group, wkID, state, geometry) %>%
+     pivot_wider(names_from = code, values_from = value) %>%
+     sf::st_as_sf()
 
-bundled_list <- get_flow_basin(watersheds, st = st)
+   dropped_geom <- final_df %>% sf::st_drop_geometry()
 
-# Bring it together ----
-
-usgs_flow_stats <- bundled_list$usgs_flow_stats %>%
-    select(code, value, group) %>%
-    pivot_wider(names_from = code, values_from = value)
-
-usgs_poly <- bundled_list$usgs_ws_polys  %>%
-  select(group, HUCID,wkID,state, geometry) %>%
-  left_join(usgs_flow_stats, by = "group") %>% st_as_sf()
-
-# return usgs_poly if not using groups
-
-if(missing(group)){return(usgs_poly)}
-
-#if using groups let the user know which ones if any didn't parse
-if(nrow(filter(usgs_raws, !group %in% usgs_poly$group)) > 0) {print(paste0("Group(s) not generated: ", filter(usgs_raws, !group %in% usgs_poly$group) %>% select(group)))}
+   if(nrow(filter(usgs_raws, !group %in% dropped_geom$group)) > 0) {
+     print(paste0("Group(s) not generated: ",
+                  filter(usgs_raws, !group %in% dropped_geom$group) %>% select(group)))
+   } else {
+       print("All groups delineated")
+     }
 
 
-return(usgs_poly)
+  return(final_df)
+
 }
-
-
-
-
-
 
 
 #' @title Batch USGS Regional Regression Estimates (RRE)
 #' @description Provides the USGS regressions from a \link[wildlandhydRo]{batch_StreamStats} object or manually entered params.
 #' Uses methods from \insertCite{ries2017streamstats}{wildlandhydRo} to generate RRE's.
-#' @param data A \link[wildlandhydro]{batch_StreamStats} with \code{state and wkID} variables
-#' @param state An abbreviated State \code{character}, e.g. "MT"
-#' @param wkID A workspace ID generated in \link[wildlandhydRo]{batch_StreamStats}
-#' @param group A vector to group by. \code{optional}
+#' @param data A previously created \link[wildlandhydro]{batch_StreamStats} object.
 #' @return Returns a data.frame with associated regional regression estimates.
 #' @examples \dontrun{
 #' # Bring in data
 #'
-#' data <- tibble(state = "MT", wkID = "MT20201116184949291000")
+#' #### use batch_StreamStats object
 #'
-#' rre_peak <- batch_RRE(state = data$state, wkID = data$wkID)
-#'
-#' #### Or use batch_StreamStats object
-#'
-#' data <- tibble(Lat = c(48.3060, 48.6293, 48.1494),
-#'                  Lon = c(-115.5432, -114.7554, -116.0593),
+#' data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
+#'                  Lon = c(-115.54327, -114.75546, -116.05935),
 #'                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
 #'
-#' three_sites <- batch_StreamStats(lon = data$Lon, lat = data$Lat, group = data$Site,
+#' data <- data %>% sf::st_as_sf(coords('Lon', 'Lat'))
+#'
+#' three_sites <- batch_StreamStats(data, group = 'Site',
 #'                                   crs = 4326)
 #'
-#' rre_peak <- batch_RRE(state = three_sites$state, wkID = three_sites$wkID, group = three_sites$group)
+#' rre_peak <- batch_RRE(three_sites)
 #'
 #' }
 #' @importFrom Rdpack reprompt
@@ -241,77 +174,40 @@ return(usgs_poly)
 #'
 
 
-batch_RRE <- function(data, state, wkID, group) {
+batch_RRE <- function(data) {
 
-# data masking
-
-if(!missing(data)){
-  state <- data %>% sf::st_drop_geometry() %>% mutate(state = {{ state }}) %>% select(state)
-
-  wkID <- data %>% sf::st_drop_geometry() %>% mutate(wkID = {{ wkID }}) %>% select(wkID)
-group <- data %>% sf::st_drop_geometry() %>% mutate(group = {{ group }}) %>% select(group)
+if(!'sf' %in% class(data)){stop('need an sf object with state, wkID and group variables.')}
+  data <- data %>% sf::st_drop_geometry()
 
 
-} else {
 
-  state <- data.frame(state = state)
-  wkID <- data.frame(wkID = wkID)
-  group <- data.frame(group = group)
-}
+get_peak_flow <- function(state, wkID){
 
-  if(!nrow(state) == nrow(wkID)) {stop("wkID and state are not the same length")}
-
-  variables <- c( "Name", "code", "Description", "Value", "Equation")
-
-  #if less than 1 ID then just run below code
-if (nrow(wkID) <= 1) {
+variables <- c( "Name", "code", "Description", "Value", "Equation")
 
   base_url <- paste0(
-    "https://streamstats.usgs.gov/streamstatsservices/flowstatistics.json?rcode=",state[1,],"&workspaceID=",
-    wkID[1,],
+    "https://streamstats.usgs.gov/streamstatsservices/flowstatistics.json?rcode=",state,"&workspaceID=",
+    wkID,
     "&includeflowtypes=true"
   )
-
 
   # try to download the data
   error <- httr::GET(url = base_url,
                      httr::write_disk(path = file.path(tempdir(),
                                                        "peak_tmp.json"),overwrite = TRUE))
+  if(error$status_code == 500){
 
+    stop(message('Sever Error 500'))
 
-  peak_s <- jsonlite::fromJSON(file.path(tempdir(),"peak_tmp.json"))
+  } else if(error$status_code == 400){
 
+    stop(message('Sever Error 400'))
 
-  peak <- (peak_s$RegressionRegions[[1]])[[6]][[1]] %>%
-    select(all_of(variables)) %>%
-    mutate(group = group) %>%
-    as.data.frame() #could change in future to be more dynamic
+  } else if(error$status_code == 404){
 
+    stop(message('Sever Error 404'))
 
-} else {
-
-  #iterate through workspaceID's and states
- peak <- tibble()
-
-  for(i in 1:nrow(wkID)){
-
-  base_url <- paste0(
-    "https://streamstats.usgs.gov/streamstatsservices/flowstatistics.json?rcode=",state[i,],"&workspaceID=",
-    wkID[i,],
-    "&includeflowtypes=true"
-  )
-
-
-  # try to download the data
-  error <- httr::GET(url = base_url,
-                     httr::write_disk(path = file.path(tempdir(),
-                                                       "peak_tmp.json"),overwrite = TRUE))
-
-  if (httr::http_error(error)) {
-    stop(sprintf("Downloading site %s failed, server is not responding or down.",
-                    group[i]))
   }
-
   peak_s <- jsonlite::fromJSON(file.path(tempdir(),"peak_tmp.json"))
 
 
@@ -319,19 +215,52 @@ if (nrow(wkID) <= 1) {
   peak_s <- (peak_s$RegressionRegions[[1]])[[6]][[1]] %>%
     select(all_of(variables)) #could change in future to be more dynamic
 
-   # what to name the groups if used
 
-  if(!nrow(group) == nrow(state)) {stop("group is not the same length as wkID or state")}
-  peak_s <- peak_s %>% mutate(group = paste0(group[i,])) %>% as.data.frame()
+ }
+if(length(data$group)>1){
 
-  #route into tibble()
+  peak_rre <- data %>%
+  split(.$group) %>%
+  furrr::future_map(safely(~get_peak_flow(.$state, .$wkID))) %>%
+  purrr::keep(~length(.) != 0) %>%
+  purrr::map(~.x[['result']]) %>%
+  keep(~ !is.null(.))
 
- peak <- plyr::rbind.fill(peak, peak_s)
+  if(purrr::is_empty(peak_rre)){
+
+    stop(message('error'))
+
+  } else {
+  peak_rre <- peak_rre  %>%
+  purrr::map2(., data$group, ~cbind(.x, group = .y)) %>%
+  plyr::rbind.fill() %>%
+  dplyr::mutate(return_interval = 1/(parse_number(Name)*0.01))
+    }
+
+
+
+} else {
+
+    peak_rre <- data %>%
+    split(.$group) %>%
+    furrr::future_map(safely(~get_peak_flow(.$state, .$wkID)))%>%
+    purrr::keep(~length(.) != 0) %>%
+    purrr::map(~.x[['result']]) %>%
+    keep(~ !is.null(.))
+
+    if(purrr::is_empty(peak_rre)){
+
+      stop(message('error'))
+
+    } else {
+    peak_rre <- peak_rre %>%
+    dplyr::mutate(return_interval = 1/(parse_number(Name)*0.01))
+    }
 
 }
 
-}
- return(peak)
+
+
 
 }
 
@@ -542,7 +471,7 @@ batch_culverts <- function(ss, rre, bfw,geo = 1) {
 #' }
 #' @export
 #'
-#' @examples
+
 culvert_size <- function(x) {
 
 

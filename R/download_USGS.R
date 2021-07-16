@@ -16,10 +16,6 @@
 #' @importFrom dataRetrieval readNWISdv renameNWISColumns readNWISsite
 #' @importFrom magrittr "%>%"
 #' @importFrom dplyr select
-#'
-#' @examples
-#'
-#'
 
 batch_USGSdv <- function(sites, parameterCd = "00060", start_date = "", end_date = "", parallel = FALSE, ...) {
 
@@ -133,8 +129,6 @@ return(usgs_raw_dv)
 #'
 #' @return
 #' @export
-#'
-#' @examples
 wyUSGS <- function(procDV, sites = NULL, parallel = FALSE, ...) {
 
 
@@ -247,7 +241,6 @@ return(usgs_min_max_wy)
 #' @importFrom stringr str_c
 #' @importFrom ape where
 #'
-#' @examples
 wymUSGS <- function(procDV, sites = NULL, parallel = FALSE, ...) {
 
   if(missing(procDV)) {
@@ -305,8 +298,6 @@ usgs_raw_min_max_wy_month<- usgs_raw_min_max_wy_month %>%
 #' @export
 #' @importFrom dplyr group_by summarise mutate relocate
 #'
-#' @examples
-#'
 #'
 
 monthUSGS <- function(procDV, sites = NULL, parallel = FALSE, ...) {
@@ -356,12 +347,10 @@ return(usgs_raw_min_max_month)
 #' @return
 #' @export
 #' @importFrom lubridate ymd_hm floor_date
-#' @importFrom dplyr mutate rename group_by mutate relocate summarise ungroup contains
+#' @importFrom dplyr mutate rename rename_with group_by mutate relocate summarise ungroup contains
 #' @importFrom dataRetrieval renameNWISColumns readNWISsite
 #' @importFrom httr GET write_disk http_error
 #' @importFrom plyr rbind.fill
-#'
-#' @examples
 #'
 hourlyUSGS <- function(procDV, sites = NULL, days = 7, parallel = FALSE, ...) {
 
@@ -714,8 +703,7 @@ if(nrow(filter(usgs_statsmv, year_nu %in% stringr::str_extract(Sys.time(), "^.{4
 #' @importFrom stringr str_replace_all
 #' @return A ggplot object
 #' @export
-#'
-#' @examples
+
 plot_reportUSGS <- function(report, time = "daily", smooth.span = NULL) {
 
   if(missing(report))stop("Need a report dataframe.")
@@ -745,7 +733,7 @@ plot_reportUSGS <- function(report, time = "daily", smooth.span = NULL) {
     }
 
     percentiles <- report %>%
-      rename_with(.cols = contains('_va'),.fn = ~str_replace_all(., "_va", "")) %>%
+      dplyr::rename_with(.cols = contains('_va'),.fn = ~str_replace_all(., "_va", "")) %>%
       mutate(month_day = fct_reorder(month_day, Date, .desc = T),
              day.of.year = as.numeric(strftime(Date,
                                                format = "%j")))

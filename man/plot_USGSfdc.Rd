@@ -9,7 +9,6 @@ plot_USGSfdc(
   site = NULL,
   startDate = "",
   endDate = "",
-  seasons = FALSE,
   span_season = NULL
 )
 }
@@ -22,9 +21,7 @@ plot_USGSfdc(
 
 \item{endDate}{A \code{character} indicating the end date. maximum (default)}
 
-\item{seasons}{A \code{logical} whether to split by seasons.}
-
-\item{span_season}{A \code{character} vector indicating a season, e.g. c('4-1', '6-30').}
+\item{span_season}{A \code{character} vector indicating a season, e.g. c('4-1', '6-30'). If NULL (default), yearly FDC will be produced.}
 }
 \value{
 A ggplot. Works with plotly::ggplotly.

@@ -22,7 +22,3 @@ A \code{data.frame}
 This function uses the results of the \link[wildlandhydRo]{batch_USGSdv} object to
 generate mean, maximum, median and standard deviation for month-only.
 }
-\examples{
-
-
-}

@@ -101,10 +101,6 @@ snotel_report_custom <- function(df) {
 #' \code{snow_depth}.
 #'
 #'
-#'
-#'
-#'
-
 #' @importFrom httr GET write_disk http_error
 #' @importFrom plyr rbind.fill
 #' @export
@@ -196,8 +192,7 @@ batch_SNOTELdv <- function(sites, parallel = FALSE, ...) {
 #'
 #' @return A \code{data.frame} with \code{mean} and \code{maximum} snow water equivalent and snow depth.
 #' @export
-#'
-#' @examples
+
 wySNOTEL <- function(procDV, sites = NULL,  parallel = FALSE, ...) {
 
   #error catching
@@ -297,7 +292,7 @@ if(isTRUE(parallel)){
 #' @importFrom httr GET http_error write_disk
 #' @importFrom lubridate as_date
 #'
-#' @examples
+
 wymSNOTEL <- function(procDV, sites = NULL, parallel = FALSE, ...) {
 
   if(!is.null(sites) & !missing(procDV)){stop("Can't use both Sites and procDV")}
@@ -426,8 +421,7 @@ monthSNOTEL <- function(procDV) {
 #' @importFrom lubridate as_date ymd_hm
 #' @return A data.frame with hourly SNOTEL data
 #' @export
-#'
-#' @examples
+
 hourlySNOTEL <- function(procDV, sites = NULL,  days = 7, parallel = FALSE, ...) {
 
   if(length(days) > 1){stop("only length 1 vector")}
@@ -510,7 +504,7 @@ if(isTRUE(parallel)){
 #' @return A \code{data.frame}
 #' @export
 #' @importFrom readr read_csv
-#' @examples
+
 
 reportSNOTELdv <- function(procDV, sites = NULL, days = 8) {
 
@@ -602,7 +596,7 @@ reportSNOTELdv <- function(procDV, sites = NULL, days = 8) {
 #' @return A \code{data.frame}
 #' @export
 #' @importFrom readr read_csv
-#' @examples
+
 
 reportSNOTELmv <- function(procDV, sites = NULL) {
 
@@ -826,7 +820,7 @@ plot_reportSNOTEL <- function(report, time = "daily", type = "per") {
 #' @param AOI A AOI object
 #' @return A \code{data.frame}
 #' @export
-#' @examples
+
 get_SNOTEL = function(AOI){
 
   AOI_type <- sf::st_geometry_type(AOI)
