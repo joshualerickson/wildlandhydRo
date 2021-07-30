@@ -7,7 +7,7 @@
 get_Basin(sf_pt)
 }
 \arguments{
-\item{sf_pt}{A sf point object or atomic list.}
+\item{sf_pt}{A sf point object.}
 }
 \value{
 An sf object with added \code{comid} and \code{basin}.

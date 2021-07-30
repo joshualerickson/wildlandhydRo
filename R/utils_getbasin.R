@@ -3,9 +3,10 @@
 #' not the same as delineating from the exact point, rather this API uses NLDI to find the closest
 #' basin downstream source point. There is a lot you can do with this API and I would recommend
 #' looking at {nhdplusTools} as that has a lot of functionality and better documentation.
-#' @param sf_pt A sf point object or atomic list.
+#' @param sf_pt A sf point object.
 #'
 #' @return An sf object with added \code{comid} and \code{basin}.
+#' @notes \code{sf_pt} needs geometry column.
 #' @export
 #'
 
@@ -76,15 +77,15 @@ get_BasinStats <- function(data){
   rowid <- comid$rowid
 
 
-  local_characteristic <-  get_nldi_characteristics(list(featureSource = "comid", featureID = as.character(comid$comid)),
+  local_characteristic <-  nhdplusTools::get_nldi_characteristics(list(featureSource = "comid", featureID = as.character(comid$comid)),
                                                     type = "local")
 
   local_characteristic <- local_characteristic %>% rbind.fill() %>% mutate(comid = comid$comid,
                                                                            rowid = rowid) %>%
-    dplyr::filter(str_detect(characteristic_id, "CAT_RECHG|CAT_ET|CAT_PET|CAT_PPT7100_ANN|CAT_TWI|CAT_BFI")) %>%
+    dplyr::filter(stringr::str_detect(characteristic_id, "CAT_RECHG|CAT_ET|CAT_PET|CAT_PPT7100_ANN|CAT_TWI|CAT_BFI")) %>%
     dplyr::select(comid, characteristic_id, characteristic_value) %>%
-    pivot_wider(names_from = "characteristic_id", values_from = "characteristic_value") %>%
-    mutate(across(starts_with("CAT"), as.numeric),
+    tidyr::pivot_wider(names_from = "characteristic_id", values_from = "characteristic_value") %>%
+    dplyr::mutate(dplyr::across(dplyr::starts_with("CAT"), as.numeric),
            CAT_PPT7100_ANN = CAT_PPT7100_ANN*0.0393701,
            Deficit = CAT_PET-CAT_ET)
 
