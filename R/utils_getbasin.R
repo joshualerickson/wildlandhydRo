@@ -6,7 +6,7 @@
 #' @param sf_pt A sf point object.
 #'
 #' @return An sf object with added \code{comid} and \code{basin}.
-#' @notes \code{sf_pt} needs geometry column.
+#' @note \code{sf_pt} needs geometry column.
 #' @export
 #'
 
@@ -100,6 +100,6 @@ get_BasinStats <- function(data){
     purrr::map(~.x[['result']]) %>%
     plyr::rbind.fill() %>%
     sf::st_as_sf() %>%
-    dplyr::left_join(sf::st_drop_geometry(comid), by = 'rowid') %>%
+    dplyr::left_join(sf::st_drop_geometry(comid) %>% dplyr::select(rowid), by = 'rowid') %>%
     dplyr::select(-rowid)
 }

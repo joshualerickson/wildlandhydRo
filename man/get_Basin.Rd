@@ -18,3 +18,6 @@ not the same as delineating from the exact point, rather this API uses NLDI to f
 basin downstream source point. There is a lot you can do with this API and I would recommend
 looking at {nhdplusTools} as that has a lot of functionality and better documentation.
 }
+\note{
+\code{sf_pt} needs geometry column.
+}
