@@ -61,11 +61,12 @@ get_Basin <- function(sf_pt){
 #' @description This function will get pre-loaded basin statistics (zonal stats)
 #' for a provided comid. A comid can be generated in the get_Basin().
 #' @param data A previously created get_Basin() object or an sf object with comid column.
+#' @param type A character indicating what type of basin characteristic to retrieve from nhdplusTools::get_nldi_characteristics().
 #'
 #' @return An sf object with stats.
 #' @export
 #'
-get_BasinStats <- function(data){
+get_BasinStats <- function(data, type = "total"){
 
   #just added indexs to group by
 
@@ -78,16 +79,12 @@ get_BasinStats <- function(data){
 
 
   local_characteristic <-  nhdplusTools::get_nldi_characteristics(list(featureSource = "comid", featureID = as.character(comid$comid)),
-                                                    type = "local")
+                                                    type = type)
 
   local_characteristic <- local_characteristic %>% rbind.fill() %>% mutate(comid = comid$comid,
                                                                            rowid = rowid) %>%
-    dplyr::filter(stringr::str_detect(characteristic_id, "CAT_RECHG|CAT_ET|CAT_PET|CAT_PPT7100_ANN|CAT_TWI|CAT_BFI")) %>%
-    dplyr::select(comid, characteristic_id, characteristic_value) %>%
-    tidyr::pivot_wider(names_from = "characteristic_id", values_from = "characteristic_value") %>%
-    dplyr::mutate(dplyr::across(dplyr::starts_with("CAT"), as.numeric),
-           CAT_PPT7100_ANN = CAT_PPT7100_ANN*0.0393701,
-           Deficit = CAT_PET-CAT_ET)
+    dplyr::select(comid, characteristic_id, characteristic_value, characteristic_description, units) %>%
+    tidyr::pivot_wider(names_from = "characteristic_id", values_from = "characteristic_value")
 
 
   cat <- dplyr::right_join(comid, local_characteristic, by = 'comid') %>% st_as_sf()

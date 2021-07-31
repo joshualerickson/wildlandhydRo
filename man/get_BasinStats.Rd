@@ -4,10 +4,12 @@
 \alias{get_BasinStats}
 \title{Get Basin Stats}
 \usage{
-get_BasinStats(data)
+get_BasinStats(data, type = "total")
 }
 \arguments{
 \item{data}{A previously created get_Basin() object or an sf object with comid column.}
+
+\item{type}{A character indicating what type of basin characteristic to retrieve from nhdplusTools::get_nldi_characteristics().}
 }
 \value{
 An sf object with stats.
