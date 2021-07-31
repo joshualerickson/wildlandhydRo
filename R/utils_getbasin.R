@@ -70,24 +70,26 @@ get_BasinStats <- function(data, type = "total"){
 
   #just added indexs to group by
 
-  comid <- data %>% dplyr::mutate(rowid = dplyr::row_number())
+  comid <- data %>% dplyr::mutate(rowid = dplyr::row_number(),
+                                  type = type)
 
 
   get_basin_stats_function <- function(comid){
 
   rowid <- comid$rowid
 
+  type <- comid$type
 
   local_characteristic <-  nhdplusTools::get_nldi_characteristics(list(featureSource = "comid", featureID = as.character(comid$comid)),
                                                     type = type)
 
   local_characteristic <- local_characteristic %>% rbind.fill() %>% mutate(comid = comid$comid,
                                                                            rowid = rowid) %>%
-    dplyr::select(comid, characteristic_id, characteristic_value, characteristic_description, units) %>%
+    dplyr::select(comid, characteristic_id, characteristic_value) %>%
     tidyr::pivot_wider(names_from = "characteristic_id", values_from = "characteristic_value")
 
 
-  cat <- dplyr::right_join(comid, local_characteristic, by = 'comid') %>% st_as_sf()
+  cat <- dplyr::right_join(comid, local_characteristic, by = 'comid') %>% sf::st_as_sf()
   }
 
   final_basin_stats <- comid %>%
