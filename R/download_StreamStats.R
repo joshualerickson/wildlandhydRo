@@ -38,8 +38,6 @@
 
 batch_StreamStats <- function(data, group, crs = 4326){
 
-
-
     if(!'POINT' %in% sf::st_geometry_type(data)){"Need a sf POINT geometry"}
     data <- data %>% sf::st_transform(crs = crs)
     lon <- data.frame(lon = sf::st_coordinates(data)[,1])
@@ -121,8 +119,17 @@ if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon
 
    final_df <- furrr::future_map(watersheds, safely(~get_flow_basin(.)))%>%
      purrr::map(~.x[['result']]) %>% plyr::rbind.fill() %>%
-     select(code, value, group, wkID, state, geometry) %>%
-     pivot_wider(names_from = code, values_from = value) %>%
+     dplyr::select(code, 'value', group, wkID, state, geometry) %>%
+     sf::st_as_sf()
+
+   final_df_wrangle <- final_df %>%
+     sf::st_drop_geometry() %>%
+     pivot_wider(names_from = code, values_from = value)
+
+   final_sf <- final_df %>% dplyr::group_by(group) %>%
+     dplyr::slice(n=1) %>% dplyr::select(group,geometry) %>%
+     dplyr::right_join(final_df_wrangle, by = 'group') %>%
+     dplyr::relocate(geometry,.after = dplyr::last_col()) %>%
      sf::st_as_sf()
 
    dropped_geom <- final_df %>% sf::st_drop_geometry()
@@ -135,7 +142,7 @@ if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon
      }
 
 
-  return(final_df)
+  return(final_sf)
 
 }
 
@@ -183,7 +190,7 @@ if(!'sf' %in% class(data)){stop('need an sf object with state, wkID and group va
 
 get_peak_flow <- function(state, wkID){
 
-variables <- c( "Name", "code", "Description", "Value", "Equation")
+variables <- c( "Name", "code", "Description", "Value", "Equation", "IntervalBounds.Lower", "IntervalBounds.Upper")
 
   base_url <- paste0(
     "https://streamstats.usgs.gov/streamstatsservices/flowstatistics.json?rcode=",state,"&workspaceID=",
@@ -210,12 +217,14 @@ variables <- c( "Name", "code", "Description", "Value", "Equation")
   }
   peak_s <- jsonlite::fromJSON(file.path(tempdir(),"peak_tmp.json"))
 
-
+  peak_error <- (peak_s$RegressionRegions[[1]])[[6]][[1]] %>%
+    dplyr::select(dplyr::contains('Errors')) %>%
+    plyr::rbind.fill()
 
   peak_s <- (peak_s$RegressionRegions[[1]])[[6]][[1]] %>%
-    select(all_of(variables)) #could change in future to be more dynamic
+    select(any_of(variables))
 
-
+ peak_s <- dplyr::bind_cols(peak_s, peak_error)
  }
 if(length(data$group)>1){
 
@@ -234,7 +243,7 @@ if(length(data$group)>1){
   peak_rre <- peak_rre  %>%
   purrr::map2(., data$group, ~cbind(.x, group = .y)) %>%
   plyr::rbind.fill() %>%
-  dplyr::mutate(return_interval = 1/(parse_number(Name)*0.01))
+  dplyr::mutate(return_interval = 1/(readr::parse_number(Name)*0.01))
     }
 
 
@@ -254,7 +263,9 @@ if(length(data$group)>1){
 
     } else {
     peak_rre <- peak_rre %>%
-    dplyr::mutate(return_interval = 1/(parse_number(Name)*0.01))
+      purrr::map2(., data$group, ~cbind(.x, group = .y)) %>%
+      plyr::rbind.fill() %>%
+    dplyr::mutate(return_interval = 1/(readr::parse_number(Name)*0.01))
     }
 
 }
@@ -356,7 +367,7 @@ batch_culverts <- function(ss, rre, bfw,geo = 1) {
 
     if (!missing(bfw)) {
 
-      omp <- data.frame(ReturnInterval = c("2 Year Peak Flood", "25 Year Peak Flood", "50 Year Peak Flood", "100 Year Peak Flood"),
+      omp <- data.frame(ReturnInterval = c(2,25,50,100),
                         basin_char = c(0.037*(drain_area^0.95)*(precip_drain^1.52)*geo_known,
                                        0.324*(drain_area^0.84)*(precip_drain^1.26)*geo_known,
                                        0.451*(drain_area^0.82)*(precip_drain^1.22)*geo_known,
@@ -368,7 +379,7 @@ batch_culverts <- function(ss, rre, bfw,geo = 1) {
                         source = c("Omang, Parrett and Hull"),
                         group = ss$group[[i]])
 
-      pj <-  data.frame(ReturnInterval = c("2 Year Peak Flood", "25 Year Peak Flood", "50 Year Peak Flood", "100 Year Peak Flood"),
+      pj <-  data.frame(ReturnInterval = c(2,25,50,100),
                         basin_char = c(0.268*(drain_area^0.927)*(precip_drain^1.6)*(for_known+1)^(-0.508),
                                        8.5*(drain_area^0.835)*(precip_drain^1.14)*(for_known+1)^(-0.639),
                                        13.2*(drain_area^0.823)*(precip_drain^1.09)*(for_known+1)^(-0.652),
@@ -380,7 +391,7 @@ batch_culverts <- function(ss, rre, bfw,geo = 1) {
                         source = c("Parrett & Johnson"), group = ss$group[[i]])
     } else {
 
-      omp <- data.frame(ReturnInterval = c("2 Year Peak Flood", "25 Year Peak Flood", "50 Year Peak Flood", "100 Year Peak Flood"),
+      omp <- data.frame(ReturnInterval = c(2,25,50,100),
                         basin_char = c(0.037*(drain_area^0.95)*(precip_drain^1.52)*geo_known,
                                        0.324*(drain_area^0.84)*(precip_drain^1.26)*geo_known,
                                        0.451*(drain_area^0.82)*(precip_drain^1.22)*geo_known,
@@ -392,7 +403,7 @@ batch_culverts <- function(ss, rre, bfw,geo = 1) {
                         source = c("Omang, Parrett and Hull"),
                         group = ss$group[[i]])
 
-      pj <-  data.frame(ReturnInterval = c("2 Year Peak Flood", "25 Year Peak Flood", "50 Year Peak Flood", "100 Year Peak Flood"),
+      pj <-  data.frame(ReturnInterval = c(2,25,50,100),
                         basin_char = c(0.268*(drain_area^0.927)*(precip_drain^1.6)*(for_known+1)^(-0.508),
                                        8.5*(drain_area^0.835)*(precip_drain^1.14)*(for_known+1)^(-0.639),
                                        13.2*(drain_area^0.823)*(precip_drain^1.09)*(for_known+1)^(-0.652),
@@ -415,8 +426,6 @@ batch_culverts <- function(ss, rre, bfw,geo = 1) {
 
     together <- plyr::rbind.fill(Omang_parrett_hull_flows, parrett_and_johnson)
 
-    together <- together %>% mutate(RI = parse_number(ReturnInterval))
-
     if (missing(bfw)) {
 
       together_long <- together %>% pivot_longer(cols = c("basin_char", "bankfull_width_regression"), names_to = "Method") %>%
@@ -431,16 +440,14 @@ batch_culverts <- function(ss, rre, bfw,geo = 1) {
   } else {
 
 
-  culvert_usgs <- rre %>% select(basin_char = Value, ReturnInterval = Name) %>%
-      mutate(source = "USGS Regression", group = rre$group) %>% dplyr::filter(ReturnInterval %in% c("2 Year Peak Flood", "25 Year Peak Flood",
-                                                                                             "50 Year Peak Flood", "100 Year Peak Flood"))
+  culvert_usgs <- rre %>% select(basin_char = Value, ReturnInterval = return_interval) %>%
+      mutate(source = "USGS Regression", group = rre$group) %>% dplyr::filter(ReturnInterval %in% c(2,25,50,100))
 
 
   culvert_usgs <- culvert_usgs %>% dplyr::filter(group %in% ss$group)
 
   together <- plyr::rbind.fill(Omang_parrett_hull_flows, parrett_and_johnson, culvert_usgs)
 
-  together <- together %>% mutate(RI = parse_number(ReturnInterval))
 
 
 

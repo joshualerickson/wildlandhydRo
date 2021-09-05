@@ -479,3 +479,28 @@ get_RI <- function(freqDV, values, distr, RI = NULL) {
   }
 }
 
+#' Title
+#'
+#' @param x A numeric vector
+#'
+#' @return A data.frame with exceedance probabilities and return periods.
+#' @export
+#'
+
+get_exceedence <- function(x) {
+
+  #code taken from JP Gannon
+  #https://vt-hydroinformatics.github.io/floods.html#calculate-exceedance-probability-and-return-period
+  ranks <- data.frame(ranks = rank(-x), x = x)
+
+  N <- length(ranks$ranks)
+  a <- 0.44
+  ex_prob <- ranks %>% mutate(qi = (ranks - a) / (N + 1 - (2*a))) %>%
+    mutate(pi = 1 - qi) %>%
+    mutate(TpEst = 1 / (1-pi))
+
+  return(ex_prob)
+
+}
+
+

@@ -13,7 +13,7 @@
 get_Basin <- function(sf_pt){
 
 
-    if(!class(sf::st_geometry(sf_pt)[[1]])[[2]] == "POINT")stop({"Need a sf_POINT object"})
+  if(!'POINT' %in% sf::st_geometry_type(sf_pt)){"Need a sf POINT geometry"}
 
     #just added indexs to group by
 
