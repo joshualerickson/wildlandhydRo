@@ -484,7 +484,6 @@ get_RI <- function(freqDV, values, distr, RI = NULL) {
 #' @param x A numeric vector
 #'
 #' @return A data.frame with exceedance probabilities and return periods.
-#' @export
 #'
 
 get_exceedence <- function(x) {
