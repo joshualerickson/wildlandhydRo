@@ -233,7 +233,7 @@ if(length(data$group)>1){
   furrr::future_map(safely(~get_peak_flow(.$state, .$wkID))) %>%
   purrr::keep(~length(.) != 0) %>%
   purrr::map(~.x[['result']]) %>%
-  keep(~ !is.null(.))
+  purrr::keep(~ !is.null(.))
 
   if(purrr::is_empty(peak_rre)){
 
@@ -255,7 +255,7 @@ if(length(data$group)>1){
     furrr::future_map(safely(~get_peak_flow(.$state, .$wkID)))%>%
     purrr::keep(~length(.) != 0) %>%
     purrr::map(~.x[['result']]) %>%
-    keep(~ !is.null(.))
+    purrr::keep(~ !is.null(.))
 
     if(purrr::is_empty(peak_rre)){
 
