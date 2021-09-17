@@ -494,11 +494,9 @@ get_exceedence <- function(x) {
 
   N <- length(ranks$ranks)
   a <- 0.44
-  ex_prob <- ranks %>% mutate(qi = (ranks - a) / (N + 1 - (2*a))) %>%
-    mutate(pi = 1 - qi) %>%
-    mutate(TpEst = 1 / (1-pi))
-
-  return(ex_prob)
+  ex_prob <- ranks %>% mutate(exceedance_probability = (ranks - a) / (N + 1 - (2*a))) %>%
+    mutate(non_exceedance_probability = 1 - exceedance_probability) %>%
+    mutate(return_interval = 1 / (1-non_exceedance_probability))
 
 }
 

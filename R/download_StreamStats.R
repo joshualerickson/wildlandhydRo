@@ -118,31 +118,34 @@ if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon
   }
 
    final_df <- furrr::future_map(watersheds, safely(~get_flow_basin(.)))%>%
-     purrr::map(~.x[['result']]) %>% plyr::rbind.fill() %>%
-     dplyr::select(code, 'value', group, wkID, state, geometry) %>%
-     sf::st_as_sf()
+     purrr::map(~.x[['result']]) %>%
+     plyr::rbind.fill()
 
-   final_df_wrangle <- final_df %>%
+     final_df_wrangle <- final_df %>%
+     dplyr::select(code, 'value', group, wkID, state, geometry) %>%
+     sf::st_as_sf()%>%
      sf::st_drop_geometry() %>%
      pivot_wider(names_from = code, values_from = value)
 
-   final_sf <- final_df %>% dplyr::group_by(group) %>%
-     dplyr::slice(n=1) %>% dplyr::select(group,geometry) %>%
+     final_sf <- final_df %>%
+     dplyr::group_by(group) %>%
+     dplyr::slice(n=1) %>%
+     dplyr::select(group,geometry) %>%
      dplyr::right_join(final_df_wrangle, by = 'group') %>%
      dplyr::relocate(geometry,.after = dplyr::last_col()) %>%
      sf::st_as_sf()
 
-   dropped_geom <- final_df %>% sf::st_drop_geometry()
+   dropped_geom <- final_sf %>% sf::st_drop_geometry()
 
    if(nrow(filter(usgs_raws, !group %in% dropped_geom$group)) > 0) {
+
      print(paste0("Group(s) not generated: ",
                   filter(usgs_raws, !group %in% dropped_geom$group) %>% select(group)))
    } else {
        print("All groups delineated")
-     }
+   }
 
-
-  return(final_sf)
+   return(final_sf)
 
 }
 
@@ -188,7 +191,7 @@ if(!'sf' %in% class(data)){stop('need an sf object with state, wkID and group va
 
 
 
-get_peak_flow <- function(state, wkID){
+get_peak_flow <- function(state, wkID, group){
 
 variables <- c( "Name", "code", "Description", "Value", "Equation", "IntervalBounds.Lower", "IntervalBounds.Upper")
 
@@ -214,65 +217,56 @@ variables <- c( "Name", "code", "Description", "Value", "Equation", "IntervalBou
 
     stop(message('Sever Error 404'))
 
-  }
+  } else {
   peak_s <- jsonlite::fromJSON(file.path(tempdir(),"peak_tmp.json"))
 
-  peak_error <- (peak_s$RegressionRegions[[1]])[[6]][[1]] %>%
-    dplyr::select(dplyr::contains('Errors')) %>%
-    plyr::rbind.fill()
-
   peak_s <- (peak_s$RegressionRegions[[1]])[[6]][[1]] %>%
-    select(any_of(variables))
-
- peak_s <- dplyr::bind_cols(peak_s, peak_error)
+    select(any_of(variables)) %>% mutate(group = group)
+  }
  }
 if(length(data$group)>1){
 
+
   peak_rre <- data %>%
   split(.$group) %>%
-  furrr::future_map(safely(~get_peak_flow(.$state, .$wkID))) %>%
+  furrr::future_map(safely(~get_peak_flow(.$state, .$wkID, .$group))) %>%
   purrr::keep(~length(.) != 0) %>%
-  purrr::map(~.x[['result']]) %>%
-  purrr::keep(~ !is.null(.))
+  purrr::map(~.x[['result']])
 
-  if(purrr::is_empty(peak_rre)){
 
-    stop(message('error'))
+ peak_rre <- peak_rre %>%
+    plyr::rbind.fill() %>%
+   dplyr::mutate(return_interval = 1/(readr::parse_number(Name)*0.01))
 
+    peak_group <- peak_rre %>%
+    group_by(group) %>%
+    dplyr::slice(n=1)
+
+
+
+  if(nrow(filter(data, !group %in% peak_group$group)) > 0) {
+
+    print(paste0("Group(s) not generated: ",
+                 filter(data, !group %in% peak_group$group) %>% select(group)))
   } else {
-  peak_rre <- peak_rre  %>%
-  purrr::map2(., data$group, ~cbind(.x, group = .y)) %>%
-  plyr::rbind.fill() %>%
-  dplyr::mutate(return_interval = 1/(readr::parse_number(Name)*0.01))
-    }
+
+    print(paste0('All Groups Delineated'))
 
 
+  }
 
 } else {
 
-    peak_rre <- data %>%
-    split(.$group) %>%
-    furrr::future_map(safely(~get_peak_flow(.$state, .$wkID)))%>%
-    purrr::keep(~length(.) != 0) %>%
-    purrr::map(~.x[['result']]) %>%
-    purrr::keep(~ !is.null(.))
+    peak_rre <- get_peak_flow(data$state, data$wkID, data$group)
 
-    if(purrr::is_empty(peak_rre)){
-
-      stop(message('error'))
-
-    } else {
     peak_rre <- peak_rre %>%
-      purrr::map2(., data$group, ~cbind(.x, group = .y)) %>%
       plyr::rbind.fill() %>%
     dplyr::mutate(return_interval = 1/(readr::parse_number(Name)*0.01))
-    }
+
 
 }
 
-
-
-
+return(peak_rre)
 }
 
 

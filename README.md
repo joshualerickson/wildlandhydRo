@@ -1,17 +1,18 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# wildlandhydRo
+------------------------------------------------------------------------
 
-<!-- badges: start -->
+# wildlandhydRo <a><img src='man/figures/logo.png' align="right" height="131.5" /></a>
 
-<!-- badges: end -->
+# Intro
 
 The goal of wildlandhydRo is to create wrapper functions around commonly
 used packages like [streamstats](https://github.com/markwh/streamstats),
 [snotelr](https://github.com/bluegreen-labs/snotelr) and
-[dataRetrieval](https://github.com/USGS-R/dataRetrieval). Basically, a
-package for me but worth sharing with others.
+[dataRetrieval](https://github.com/USGS-R/dataRetrieval) and prepare
+them for chunk-based parallelism, data munging and reporting. Basically,
+a package for me but worth sharing with others.
 
 ## Installation
 
@@ -23,70 +24,138 @@ You can install the development version from
 devtools::install_github("joshualerickson/wildlandhydRo")
 ```
 
-## Example
+## Examples
 
-This is a basic example which shows you how to solve a common problem:
-getting more than one culvert sized.
+Below are some common examples that I routinely use with the package.
+
+### Parallel
+
+With {wildlandhydRo} it is really easy to get station data in parallel.
+The functions use the [{furrr}](https://github.com/DavisVaughan/furrr)
+framework and will work by planning a session prior to calling the
+function. Below is a quick benchmark between the options; regular (np)
+or parallel (para).
 
 ``` r
 library(wildlandhydRo)
-## basic example code
+library(microbenchmark)
+library(dataRetrieval)
+
+sites <- dataRetrieval::whatNWISsites(stateCd='MT', parameterCd = '00060') %>% 
+  filter(nchar(site_no) <= 8)
+
+tm <- microbenchmark(
+ 'np' = {
+   batch_USGSdv(sites = sites[1:50,]$site_no, parallel = FALSE)},
+ 'para' = {
+   future::plan('multisession')
+   batch_USGSdv(sites = sites[1:50,]$site_no, parallel = TRUE)},
+ times = 10
+)
+
+tm
+
+autoplot(tm)
 ```
 
-This delineates the basins and then computes basin characteristics
-(e.g. precip, basin area, percent forested, etc.). The advantage of
-`batch_StreamStats()` is you can do more than one at a time. See example
-below.
+<img src="man/figures/para_vs_np.png" width="100%" height="100%" />
+
+You can do this for most functions in the package,
+e.g. `batch_*(), wym*(), ym*(), get_Basin()`, etc.
+
+### Annual and Monthly Stats
+
+With the package you can get monthly, annual and monthly-annual
+statistics for a snotel or usgs sites. You can provide a previously
+create `batch_*()` data.frame or the station id. This creates/mungs the
+results of the daily values to generate mean, maximum, median and
+standard deviation per water year or per water year per month. It also
+includes peaks from dataRetrieval::readNWISpeak(); annual base-flow (tp
+= 0.9, window = 5) and Base-flow Index (BFI) (total-flow/base-flow) from
+baseflow; annual coefficient of variance (sd of flow/mean of flow); and
+normalization methods Flow/drainage area, Flow/(all time mean flow) and
+Flow/log(standard deviation). The window for all the methods are annual,
+e.g. 1. This leaves it up to the user to explore different windows if
+inclined. Monthly stats
 
 ``` r
-# data frame with 3 different pour point locations
-data <- tibble(Lat = c(48.7151, 48.6995, 48.6955, 48.6898),
-                  Lon = c(-115.0839, -115.0916, -115.0834, -115.0957),
-                   Site = c("Pink Creek", "Sieminski Creek", "Finger Creek", "Lydia Creek"))
-
-four_sites <- data %>% batch_StreamStats(lon = Lon, lat = Lat, group = Site,
-                                  crs = 4326)
+water_year <- wyUSGS(sites = '12304500')
+ggplot(water_year, aes(peak_dt, Peak)) + 
+  geom_line() +
+  labs(title = 'Peak Flow per Water Year', 
+       subtitle = paste0(water_year %>% slice(n=1) %>% .$Station))
 ```
 
-You can see that below that the basins were delineated. The function
-adds basin characteristics, which we can then visualize,
-e.g. precipitation.
-
-<img src="man/figures/README-unnamed-chunk-3-1.png" width="75%" /> <br>
-
-Now we can use `batch_RRE()` to get regional regression estimates. Here
-we’ll use the `four_sites` named object as the parameter input for the
-function. Note you don’t have to use a `batch_StreamStats()` object and
-could just manually enter the correct parameters.
+<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" />
 
 ``` r
-peak_RRE <- four_sites %>% batch_RRE(state = state, wkID = wkID, group = group)
+monthly <- wymUSGS(sites = '12304500')
+ggplot(monthly, aes(year_month, coef_var)) +
+  geom_line() +
+  labs(title = 'Monthly Coefficient of Variance', 
+       subtitle = paste0(monthly %>% slice(n=1) %>% .$Station))
 ```
 
-Then we can plot together. Below are the four sites and the calculated
-regional regression estimates (RRE).
+<img src="man/figures/README-unnamed-chunk-4-2.png" width="100%" />
+
+### Get Percentiles for Reporting
+
+You can also just generate percentiles for daily values or months.
+
+-   Daily
 
 ``` r
-peak_RRE %>% ggplot(aes(parse_number(Name), Value)) + geom_line() + geom_point() + facet_wrap(~group, nrow = 1)
+yaak_dv <- batch_USGSdv(sites = '12304500')
+
+usgs_rep <- reportUSGSdv(procDV = yaak_dv, days = 60)
+
+plot_reportUSGS(usgs_rep)
 ```
 
 <img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />
 
-The next step is to generate recommended culvert sizes for a set of
-reoccurrence intervals (e.g. 2,25,50,100) based on the stream stats
-collected in the previous steps. It’s important to note that this is
-only available for western Montana right now. Also, we don’t have
-bankfull width measurements and it is highly recommended to include if
-you can.
+-   Monthly
 
 ``` r
-culverts_all <- batch_culverts(ss = four_sites, rre = peak_RRE)
+usgs_rep_month <- reportUSGSmv(procDV = yaak_dv)
+
+plot_reportUSGS(usgs_rep_month %>% filter(year_nu >2020), time = 'month')
 ```
 
-Then we can plot and see the difference between regressions.
+<img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" />
+
+### Get a Drain Point
+
+Sometimes you just want to get the drainage area above a point and then
+do some other things. With `get_Basin()` function you just have to
+provide a sf point and it will return the basin. If you want zonal stats
+associated with that drainage area then just use `get_BasinStats()`.
+
+-   Basin
 
 ``` r
-culverts_all %>% ggplot(aes(RI, value, color = source)) + geom_point() + geom_line() + geom_text_repel(data = culverts_all %>% group_by(group) %>% filter(RI == 100),aes(label = Size), force = 50) + facet_grid(group~Method)
+pt <- tibble(lon = -114.36, lat = 48.92)
+pt <- sf::st_as_sf(pt, coords = c('lon', 'lat'))
+
+basin <- get_Basin(pt)
+
+ggplot() + geom_sf(data = basin)
 ```
 
 <img src="man/figures/README-unnamed-chunk-7-1.png" width="100%" />
+
+-   Basin Stats
+
+``` r
+basin_stats <- get_BasinStats(basin)
+
+basin_stats %>% sf::st_drop_geometry() %>% 
+  pivot_longer(cols = c('TOT_PET', 'TOT_BFI', 'TOT_TWI')) %>% 
+  select(name, value, comid) %>% 
+  right_join(basin_stats, by ='comid') %>% sf::st_as_sf() %>% 
+  ggplot() + 
+  geom_sf(aes(fill = value)) +
+    facet_wrap(~name, nrow = 3) + theme_void()
+```
+
+<img src="man/figures/README-unnamed-chunk-8-1.png" width="100%" />
