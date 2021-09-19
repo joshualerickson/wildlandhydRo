@@ -9,7 +9,7 @@ batch_frequency(data, value)
 \arguments{
 \item{data}{A \code{data.frame} with \code{numeric} variable and date}
 
-\item{value}{A \code{numeric} vector. length > 10}
+\item{value}{A \code{numeric} vector.}
 }
 \value{
 A \code{data.frame} with return intervals and associated value for Weibull,
@@ -18,6 +18,6 @@ GEV, Log-pearson type III, Pearson, Gumbel, Normal and Lognormal distributions.
 \description{
 This function fits a variable (e.g., flow, snow, rain, etc) to a univariate distribution
 function, e.g. Weibull,
-GEV, Log-pearson type III, Pearson, Gumbel, Normal and Lognormal distributions. Values must be greater than zero and size must be greater than 10.
-It is up to the user to decide which distribution function to use.
+GEV, Log-pearson type III, Pearson, Gumbel, Normal and Lognormal distributions.
+It is up to the user to decide which distribution function to use and whether any pre-processing is necessary (outliers, mixed populations, etc).
 }

@@ -2,10 +2,10 @@
 #' Batched Frequencies
 #' @description This function fits a variable (e.g., flow, snow, rain, etc) to a univariate distribution
 #' function, e.g. Weibull,
-#' GEV, Log-pearson type III, Pearson, Gumbel, Normal and Lognormal distributions. Values must be greater than zero and size must be greater than 10.
-#' It is up to the user to decide which distribution function to use.
+#' GEV, Log-pearson type III, Pearson, Gumbel, Normal and Lognormal distributions.
+#' It is up to the user to decide which distribution function to use and whether any pre-processing is necessary (outliers, mixed populations, etc).
 #' @param data A \code{data.frame} with \code{numeric} variable and date
-#' @param value A \code{numeric} vector. length > 10
+#' @param value A \code{numeric} vector.
 #'
 #' @return A \code{data.frame} with return intervals and associated value for Weibull,
 #' GEV, Log-pearson type III, Pearson, Gumbel, Normal and Lognormal distributions.
@@ -26,7 +26,7 @@ batch_frequency <- function(data, value) {
   max.x <- data %>% transmute(x = {{ value }}) %>% na.omit()
  }
 
-  if (!nrow(max.x) >= 10) {stop("Warning: Need more data (e.g. 10 years).")}
+  if (!nrow(max.x) >= 2) {stop("Warning: Need more data.")}
 
   mean.x <- mean(max.x$x, na.rm = TRUE) #mean of max Q
 
@@ -119,7 +119,7 @@ batch_frequency <- function(data, value) {
 #' GEV, Log-pearson type III, Pearson, Gumbel, Normal and Lognormal distributions.
 #' @export
 #'
-batch_distribution <- function(data, value) {
+batch_distribution <- function(data, value,...) {
 
 
   if(missing(data)){
@@ -156,13 +156,13 @@ batch_distribution <- function(data, value) {
 
   skew_log <- skewed(log(max.x$x),type = 3, na.rm = TRUE)
 
-  weib <- fitdist(max.x$x, distr = 'weibull')
-  lnorm <- fitdist(max.x$x, distr = 'lnorm')
-  norm <- fitdist(max.x$x, distr = 'norm')
-  lpearson <- fitdist(max.x$x, method = 'mge', distr = "lpearsonIII", start = list(meanlog = log_mean.x, sdlog = log_sd.x, skew = skew_log))
-  pearson <- fitdist(max.x$x, method = 'mge', distr = 'pearsonIII', start = list(mean = mean.x, sd = sd.x, skew = skew))
-  gumbel <- fitdist(max.x$x, distr = 'gumbel', start = list(loc = loc_gum, scale = scale_gum))
-  gev <- suppressWarnings(fitdist(max.x$x, distr = 'gev', start = list(loc = loc_gev, scale = scale_gev, shape = shape_gev)))
+  weib <- fitdist(max.x$x, distr = 'weibull',...)
+  lnorm <- fitdist(max.x$x, distr = 'lnorm',...)
+  norm <- fitdist(max.x$x, distr = 'norm',...)
+  lpearson <- fitdist(max.x$x, distr = "lpearsonIII", start = list(meanlog = log_mean.x, sdlog = log_sd.x, skew = skew_log),...)
+  pearson <- fitdist(max.x$x,  distr = 'pearsonIII', start = list(mean = mean.x, sd = sd.x, skew = skew),...)
+  gumbel <- fitdist(max.x$x, distr = 'gumbel', start = list(loc = loc_gum, scale = scale_gum),...)
+  gev <- suppressWarnings(fitdist(max.x$x, distr = 'gev', start = list(loc = loc_gev, scale = scale_gev, shape = shape_gev),...))
 
 
   dist_list <- list(weib = weib, lnorm = lnorm, norm = norm, lpearson = lpearson, pearson = pearson,

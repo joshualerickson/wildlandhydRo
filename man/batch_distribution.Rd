@@ -4,7 +4,7 @@
 \alias{batch_distribution}
 \title{Distribution Test}
 \usage{
-batch_distribution(data, value)
+batch_distribution(data, value, ...)
 }
 \arguments{
 \item{data}{A \code{data.frame}}

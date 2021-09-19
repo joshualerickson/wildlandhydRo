@@ -1,7 +1,7 @@
 
 #' @title Download Multiple Stream Stats Locations
 #'
-#' @description Takes sf point object and returns catchment characteristics and watershed boundary (sf). Uses \link[AOI]{geocode_rev} to get
+#' @description Takes sf point object and returns watershed boundary (sf). Uses \link[AOI]{geocode_rev} to get
 #' the state identifier and \link[streamstats]{computeChars} and \link[streamstats]{delineateWatershed} to generate basin
 #' delineation(s) and characteristics,
 #' which use methods from \insertCite{ries2017streamstats}{wildlandhydRo}
@@ -29,14 +29,13 @@
 #'                  Lon = c(-115.54327, -114.75546, -116.05935),
 #'                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
 #' data <- data %>% sf::st_as_sf(coords('Lon', 'Lat'))
-#' three_sites <- batch_StreamStats(data, group = 'Site',
+#' three_sites <- batch_StreamStatsDelineate(data, group = 'Site',
 #'                                   crs = 4326)
 #'
 #' }
 
 
-
-batch_StreamStats <- function(data, group, crs = 4326){
+batch_StreamStatsDelineate <- function(data, group, crs = 4326){
 
     if(!'POINT' %in% sf::st_geometry_type(data)){"Need a sf POINT geometry"}
     data <- data %>% sf::st_transform(crs = crs)
@@ -82,9 +81,8 @@ batch_StreamStats <- function(data, group, crs = 4326){
       dl <- if(!is.null(dlt)) {dl} else NULL
       if(!is.null(dl)) return(dl)
     }
-     df
+    df
   }
-
 
 if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon")}
 
@@ -96,16 +94,57 @@ if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon
       purrr::keep(~length(.) != 0) %>%
       purrr::map(~.x[['result']])
 
+    missing_vals <- purrr::keep(watersheds, ~!purrr::is_empty(.$messages)) %>%
+      purrr::keep(~length(.[["featurecollection"]][[2]][["feature"]][["features"]])>0) %>%
+      purrr::map(~.$group) %>%
+      as.data.frame() %>%
+      tidyr::pivot_longer(dplyr::everything())
 
+    if(nrow(usgs_raws) > nrow(missing_vals)) {
+
+      print(paste0("Basin(s) not delineated: ",
+                   filter(usgs_raws, !group %in% missing_vals$value) %>% select(group)))
+    } else {
+      print("All basins delineated")
+    }
+
+    watersheds <- purrr::keep(watersheds, ~!purrr::is_empty(.$messages)) %>%
+      purrr::keep(~length(.[["featurecollection"]][[2]][["feature"]][["features"]])>0)
+    return(watersheds)
+}
+#' @title Stream Stats Catchment Characteristics
+#'
+#' @description Takes previously created batch_StreamStatsDelineate() and returns watershed boundary and catchment characteristics. Uses \link[streamstats]{computeChars}
+#' to get basin characteristics,
+#' which use methods from \insertCite{ries2017streamstats}{wildlandhydRo}
+#' @param watersheds A previously created \link[wildlandhydRo](batch_StreamStatsDelineate)
+#' @export
+#' @references {
+#' \insertAllCited{}
+#' }
+#' @examples \dontrun{
+#' # Bring in data
+#'
+#' data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
+#'                  Lon = c(-115.54327, -114.75546, -116.05935),
+#'                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
+#' data <- data %>% sf::st_as_sf(coords('Lon', 'Lat'))
+#' three_sites <- batch_StreamStatsDelineate(data, group = 'Site',
+#'                                   crs = 4326)
+#' catch_chars <- batch_StreamStatsCatchChars(three_sites)
+#'
+#' }
+
+batch_StreamStatsCatchChars <- function(watersheds){
 # compute basin characteristics ----
-  get_flow_basin <- function(watersheds) {
+  get_flow_basin <- function(ws) {
 
-    usgs_ws <- streamstats::writeGeoJSON(watersheds, file.path(tempdir(),"ss_tmp.json")) %>%
+    usgs_ws <- streamstats::writeGeoJSON(ws, file.path(tempdir(),"ss_tmp.json")) %>%
       geojsonsf::geojson_sf() %>% st_as_sf()
     #
-    usgs_ws <- usgs_ws %>% mutate(wkID = watersheds$workspaceID,
-                                  state = stringr::str_sub(watersheds$workspaceID,end = 2),
-                                  group = watersheds$group)
+    usgs_ws <- usgs_ws %>% mutate(wkID = ws$workspaceID,
+                                  state = stringr::str_sub(ws$workspaceID,end = 2),
+                                  group = ws$group)
 
     flow_stats <- streamstats::computeChars(workspaceID = usgs_ws$wkID, rcode = usgs_ws$state)
 
@@ -117,7 +156,11 @@ if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon
 
   }
 
-   final_df <- furrr::future_map(watersheds, safely(~get_flow_basin(.)))%>%
+
+   final_df <- furrr::future_map(watersheds, safely(~get_flow_basin(.)))
+
+
+   final_df <- final_df %>%
      purrr::map(~.x[['result']]) %>%
      plyr::rbind.fill()
 
@@ -135,14 +178,15 @@ if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon
      dplyr::relocate(geometry,.after = dplyr::last_col()) %>%
      sf::st_as_sf()
 
+
    dropped_geom <- final_sf %>% sf::st_drop_geometry()
+   og_groups <- purrr::map(watersheds, ~.$group) %>% as.data.frame() %>%  tidyr::pivot_longer(dplyr::everything()) %>% select(value)
+   if(nrow(dropped_geom) < length(watersheds)) {
 
-   if(nrow(filter(usgs_raws, !group %in% dropped_geom$group)) > 0) {
-
-     print(paste0("Group(s) not generated: ",
-                  filter(usgs_raws, !group %in% dropped_geom$group) %>% select(group)))
+     print(paste0("Catchment(s) not computed: ",
+                  filter(og_groups, !value %in% dropped_geom$group) %>% select(value)))
    } else {
-       print("All groups delineated")
+     print("All catchment(s) computed")
    }
 
    return(final_sf)
@@ -151,25 +195,23 @@ if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon
 
 
 #' @title Batch USGS Regional Regression Estimates (RRE)
-#' @description Provides the USGS regressions from a \link[wildlandhydRo]{batch_StreamStats} object or manually entered params.
+#' @description Provides the USGS regressions from a \link[wildlandhydRo]{batch_StreamStatsCatchChars} object or manually entered params.
 #' Uses methods from \insertCite{ries2017streamstats}{wildlandhydRo} to generate RRE's.
-#' @param data A previously created \link[wildlandhydro]{batch_StreamStats} object.
+#' @param data A previously created \link[wildlandhydro]{batch_StreamStatsCatchChars} object.
 #' @return Returns a data.frame with associated regional regression estimates.
 #' @examples \dontrun{
 #' # Bring in data
 #'
-#' #### use batch_StreamStats object
-#'
 #' data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
 #'                  Lon = c(-115.54327, -114.75546, -116.05935),
 #'                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
-#'
 #' data <- data %>% sf::st_as_sf(coords('Lon', 'Lat'))
-#'
-#' three_sites <- batch_StreamStats(data, group = 'Site',
+#' three_sites <- batch_StreamStatsDelineate(data, group = 'Site',
 #'                                   crs = 4326)
+#' catch_chars <- batch_StreamStatsCatchChars(three_sites)
 #'
-#' rre_peak <- batch_RRE(three_sites)
+#'
+#' rre_peak <- batch_RRE(catch_chars)
 #'
 #' }
 #' @importFrom Rdpack reprompt
@@ -483,4 +525,7 @@ culvert_size <- function(x) {
                               ifelse(x >= 65 & x <110,"(60 in)",
                                      ifelse(x >= 110 & x < 180,"(72 in)",
                                             ifelse(x >= 180 & x < 290,"(84 in)",
-                                                   ifelse(x >= 290 & x < 400,"(96 in)","(Bridge or Big Culvert!)"))))))))}
+                                                   ifelse(x >= 290 & x < 400,"(96 in)","(Bridge or Big Culvert!)"))))))))
+}
+
+
