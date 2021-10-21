@@ -7,29 +7,31 @@
 batch_RRE(data)
 }
 \arguments{
-\item{data}{A previously created \link[wildlandhydro]{batch_StreamStatsCatchChars} object.}
+\item{data}{A previously created \link[wildlandhydro]{batch_StreamStats} object.}
 }
 \value{
 Returns a data.frame with associated regional regression estimates.
 }
 \description{
-Provides the USGS regressions from a \link[wildlandhydRo]{batch_StreamStatsCatchChars} object or manually entered params.
+Provides the USGS regressions from a \link[wildlandhydRo]{batch_StreamStats} object or manually entered params.
 Uses methods from \insertCite{ries2017streamstats}{wildlandhydRo} to generate RRE's.
 }
 \examples{
 \dontrun{
 # Bring in data
 
+#### use batch_StreamStats object
+
 data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
                  Lon = c(-115.54327, -114.75546, -116.05935),
                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
+
 data <- data \%>\% sf::st_as_sf(coords('Lon', 'Lat'))
-three_sites <- batch_StreamStatsDelineate(data, group = 'Site',
+
+three_sites <- batch_StreamStats(data, group = 'Site',
                                   crs = 4326)
-catch_chars <- batch_StreamStatsCatchChars(three_sites)
 
-
-rre_peak <- batch_RRE(catch_chars)
+rre_peak <- batch_RRE(three_sites)
 
 }
 }

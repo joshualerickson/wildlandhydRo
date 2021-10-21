@@ -1,13 +1,14 @@
 
 #' @title Download Multiple Stream Stats Locations
 #'
-#' @description Takes sf point object and returns watershed boundary (sf). Uses \link[AOI]{geocode_rev} to get
+#' @description Takes sf point object and returns catchment characteristics and watershed boundary (sf). Uses \link[AOI]{geocode_rev} to get
 #' the state identifier and \link[streamstats]{computeChars} and \link[streamstats]{delineateWatershed} to generate basin
 #' delineation(s) and characteristics,
 #' which use methods from \insertCite{ries2017streamstats}{wildlandhydRo}
 #' @param data A \code{data.frame} with \code{lon,lat} variables. \code{optional}
 #' @param group A vector to group by. \code{optional}
 #' @param crs A \code{numeric} crs value
+#' @param parallel \code{logical} indicating whether to use future_map().
 #' @references {
 #' \insertAllCited{}
 #' }
@@ -28,32 +29,33 @@
 #' data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
 #'                  Lon = c(-115.54327, -114.75546, -116.05935),
 #'                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
-#' data <- data %>% sf::st_as_sf(coords('Lon', 'Lat'))
-#' three_sites <- batch_StreamStatsDelineate(data, group = 'Site',
+#' data <- data %>% sf::st_as_sf(coords = c('Lon', 'Lat'))
+#' three_sites <- batch_StreamStats(data, group = 'Site',
 #'                                   crs = 4326)
 #'
 #' }
 
 
-batch_StreamStatsDelineate <- function(data, group, crs = 4326){
 
-    if(!'POINT' %in% sf::st_geometry_type(data)){"Need a sf POINT geometry"}
-    data <- data %>% sf::st_transform(crs = crs)
-    lon <- data.frame(lon = sf::st_coordinates(data)[,1])
-    lat <- data.frame(lat = sf::st_coordinates(data)[,2])
-    if(missing(group)){
+batch_StreamStats <- function(data, group, crs = 4326, parallel = FALSE){
 
-      group <- data %>%
-        sf::st_drop_geometry() %>%
-        mutate(group = dplyr::row_number()) %>%
-        select(group)
-    } else {
+  if(!'POINT' %in% sf::st_geometry_type(data)){"Need a sf POINT geometry"}
+  data <- data %>% sf::st_transform(crs = crs)
+  lon <- data.frame(lon = sf::st_coordinates(data)[,1])
+  lat <- data.frame(lat = sf::st_coordinates(data)[,2])
 
-      group <- data  %>%
+  if(missing(group)){
+
+    group <- data %>%
       sf::st_drop_geometry() %>%
-        select({{group}})
-    }
+      mutate(group = dplyr::row_number()) %>%
+      select(group)
+  } else {
 
+    group <- data  %>%
+      sf::st_drop_geometry() %>%
+      select(group = {{group}})
+  }
 
   # Create a vector of state abbreviations
 
@@ -66,89 +68,90 @@ batch_StreamStatsDelineate <- function(data, group, crs = 4326){
     st <- append(st, state)
   }
 
-# delineateWatershed ----
+  # delineateWatershed ----
   # Separate into whether group is null or not
   dl_ws <- function(df){
 
-    for(i in 1:2){
 
-      dl <- tryCatch({streamstats::delineateWatershed(df$lon, df$lat,
-                                                      rcode = df$state,
-                                                      crs = df$crs)},
-                     error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-      dl['group'] <- df['group']
-      dlt <- pluck(dl$featurecollection)
-      dl <- if(!is.null(dlt)) {dl} else NULL
-      if(!is.null(dl)) return(dl)
-    }
-    df
+
+    base_url <- paste0(
+      "https://streamstats.usgs.gov/streamstatsservices/watershed.geojson?rcode=",
+      df$state,"&xlocation=",
+      df$lon,"&ylocation=",
+      df$lat,"&includeparameters=false&includeflowtypes=false&includefeatures=true&crs=",
+      df$crs
+    )
+
+    # try to download the data
+    error <- httr::GET(url = base_url,
+                       httr::write_disk(path = file.path(tempdir(),
+                                                         "ws_tmp.json"),
+                                        overwrite = TRUE),
+                       httr::add_headers("withCredentials"))
+
+    # read in the snotel data
+    json <- jsonlite::fromJSON(file.path(tempdir(),"ws_tmp.json"))
+
+    dfclip <- json$featurecollection$feature$features[[2]]$geometry
+
+    dfjson <- jsonlite::toJSON(dfclip)
+
+    json2sf <- geojsonsf::geojson_sf(dfjson)
+
+    json2sf$wkID <- json$workspaceID
+
+    json2sf$group <- df$group
+
+    json2sf
   }
 
-if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon")}
 
-    usgs_raws <- data.frame(lat = lat, lon = lon, group = group[,1], state = st, crs = crs)
+  if(!nrow(group) == nrow(lat)) {stop("group is not the same length as lat and lon")}
 
+  usgs_raws <- data.frame(lat = lat, lon = lon, group = group[,1], state = st, crs = crs)
+
+  if(isTRUE(parallel)){
+  watersheds <-  usgs_raws %>%
+    split(.$group) %>%
+    furrr::future_map(safely(~dl_ws(.))) %>%
+    purrr::keep(~length(.) != 0) %>%
+    purrr::map(~.x[['result']])
+  } else {
     watersheds <-  usgs_raws %>%
-      split(.$group) %>%
-      furrr::future_map(safely(~dl_ws(.))) %>%
-      purrr::keep(~length(.) != 0) %>%
-      purrr::map(~.x[['result']])
+    split(.$group) %>%
+    purrr::map(safely(~dl_ws(.))) %>%
+    purrr::keep(~length(.) != 0) %>%
+    purrr::map(~.x[['result']])
+  }
 
-    missing_vals <- purrr::keep(watersheds, ~!purrr::is_empty(.$messages)) %>%
-      purrr::keep(~length(.[["featurecollection"]][[2]][["feature"]][["features"]])>0) %>%
-      purrr::map(~.$group) %>%
-      as.data.frame() %>%
-      tidyr::pivot_longer(dplyr::everything())
 
-    if(nrow(usgs_raws) > nrow(missing_vals)) {
 
-      print(paste0("Basin(s) not delineated: ",
-                   filter(usgs_raws, !group %in% missing_vals$value) %>% select(group)))
-    } else {
-      print("All basins delineated")
-    }
+  # compute basin characteristics ----
+  get_flow_basin <- function(watersheds) {
 
-    watersheds <- purrr::keep(watersheds, ~!purrr::is_empty(.$messages)) %>%
-      purrr::keep(~length(.[["featurecollection"]][[2]][["feature"]][["features"]])>0)
-    return(watersheds)
-}
-#' @title Stream Stats Catchment Characteristics
-#'
-#' @description Takes previously created batch_StreamStatsDelineate() and returns watershed boundary and catchment characteristics. Uses \link[streamstats]{computeChars}
-#' to get basin characteristics,
-#' which use methods from \insertCite{ries2017streamstats}{wildlandhydRo}
-#' @param watersheds A previously created \link[wildlandhydRo](batch_StreamStatsDelineate)
-#' @export
-#' @references {
-#' \insertAllCited{}
-#' }
-#' @examples \dontrun{
-#' # Bring in data
-#'
-#' data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
-#'                  Lon = c(-115.54327, -114.75546, -116.05935),
-#'                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
-#' data <- data %>% sf::st_as_sf(coords('Lon', 'Lat'))
-#' three_sites <- batch_StreamStatsDelineate(data, group = 'Site',
-#'                                   crs = 4326)
-#' catch_chars <- batch_StreamStatsCatchChars(three_sites)
-#'
-#' }
+    usgs_ws <- watersheds %>%
+      mutate(state = stringr::str_sub(wkID,end = 2))
 
-batch_StreamStatsCatchChars <- function(watersheds){
-# compute basin characteristics ----
-  get_flow_basin <- function(ws) {
+    base_url <- paste0(
+      "https://streamstats.usgs.gov/streamstatsservices/parameters.json?rcode=",
+      usgs_ws$state,
+      "&workspaceID=",
+      usgs_ws$wkID,
+      "&includeparameters=true"
+    )
 
-    usgs_ws <- streamstats::writeGeoJSON(ws, file.path(tempdir(),"ss_tmp.json")) %>%
-      geojsonsf::geojson_sf() %>% st_as_sf()
-    #
-    usgs_ws <- usgs_ws %>% mutate(wkID = ws$workspaceID,
-                                  state = stringr::str_sub(ws$workspaceID,end = 2),
-                                  group = ws$group)
+    # try to download the data
+    error <- httr::GET(url = base_url,
+                       httr::write_disk(path = file.path(tempdir(),
+                                                         "char_tmp.json"),
+                                        overwrite = TRUE),
+                       httr::add_headers("withCredentials"))
 
-    flow_stats <- streamstats::computeChars(workspaceID = usgs_ws$wkID, rcode = usgs_ws$state)
+    # read in the snotel data
+    json <- jsonlite::fromJSON(file.path(tempdir(),"char_tmp.json"))
 
-    flow_stats <- flow_stats$parameters
+
+    flow_stats <- json$parameters
 
     flow_stats <- flow_stats %>% mutate(wkID = usgs_ws$wkID)
 
@@ -156,62 +159,60 @@ batch_StreamStatsCatchChars <- function(watersheds){
 
   }
 
+  final_df <- furrr::future_map(watersheds, safely(~get_flow_basin(.)))%>%
+    purrr::map(~.x[['result']]) %>%
+    plyr::rbind.fill()
 
-   final_df <- furrr::future_map(watersheds, safely(~get_flow_basin(.)))
+  final_df_wrangle <- final_df %>%
+    dplyr::select(code, 'value', group, wkID, state, geometry) %>%
+    sf::st_as_sf()%>%
+    sf::st_drop_geometry() %>%
+    pivot_wider(names_from = code, values_from = value)
 
+  final_sf <- final_df %>%
+    dplyr::group_by(group) %>%
+    dplyr::slice(n=1) %>%
+    dplyr::select(group,geometry) %>%
+    dplyr::right_join(final_df_wrangle, by = 'group') %>%
+    dplyr::relocate(geometry,.after = dplyr::last_col()) %>%
+    sf::st_as_sf()
 
-   final_df <- final_df %>%
-     purrr::map(~.x[['result']]) %>%
-     plyr::rbind.fill()
+  dropped_geom <- final_sf %>% sf::st_drop_geometry()
 
-     final_df_wrangle <- final_df %>%
-     dplyr::select(code, 'value', group, wkID, state, geometry) %>%
-     sf::st_as_sf()%>%
-     sf::st_drop_geometry() %>%
-     pivot_wider(names_from = code, values_from = value)
+  if(nrow(filter(usgs_raws, !group %in% dropped_geom$group)) > 0) {
 
-     final_sf <- final_df %>%
-     dplyr::group_by(group) %>%
-     dplyr::slice(n=1) %>%
-     dplyr::select(group,geometry) %>%
-     dplyr::right_join(final_df_wrangle, by = 'group') %>%
-     dplyr::relocate(geometry,.after = dplyr::last_col()) %>%
-     sf::st_as_sf()
+    print(paste0("Group(s) not generated: ",
+                 filter(usgs_raws, !group %in% dropped_geom$group) %>% select(group)))
+  } else {
+    print("All groups delineated")
+  }
 
-
-   dropped_geom <- final_sf %>% sf::st_drop_geometry()
-   og_groups <- purrr::map(watersheds, ~.$group) %>% as.data.frame() %>%  tidyr::pivot_longer(dplyr::everything()) %>% select(value)
-   if(nrow(dropped_geom) < length(watersheds)) {
-
-     print(paste0("Catchment(s) not computed: ",
-                  filter(og_groups, !value %in% dropped_geom$group) %>% select(value)))
-   } else {
-     print("All catchment(s) computed")
-   }
-
-   return(final_sf)
+  return(final_sf)
 
 }
 
 
 #' @title Batch USGS Regional Regression Estimates (RRE)
-#' @description Provides the USGS regressions from a \link[wildlandhydRo]{batch_StreamStatsCatchChars} object or manually entered params.
+#' @description Provides the USGS regressions from a \link[wildlandhydRo]{batch_StreamStats} object or manually entered params.
 #' Uses methods from \insertCite{ries2017streamstats}{wildlandhydRo} to generate RRE's.
-#' @param data A previously created \link[wildlandhydro]{batch_StreamStatsCatchChars} object.
+#' @param data A previously created \link[wildlandhydro]{batch_StreamStats} object.
+#' @param parallel \code{logical} indicating whether to use future_map().
 #' @return Returns a data.frame with associated regional regression estimates.
 #' @examples \dontrun{
 #' # Bring in data
 #'
+#' #### use batch_StreamStats object
+#'
 #' data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
 #'                  Lon = c(-115.54327, -114.75546, -116.05935),
 #'                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
-#' data <- data %>% sf::st_as_sf(coords('Lon', 'Lat'))
-#' three_sites <- batch_StreamStatsDelineate(data, group = 'Site',
+#'
+#' data <- data %>% sf::st_as_sf(coords = c('Lon', 'Lat'))
+#'
+#' three_sites <- batch_StreamStats(data, group = 'Site',
 #'                                   crs = 4326)
-#' catch_chars <- batch_StreamStatsCatchChars(three_sites)
 #'
-#'
-#' rre_peak <- batch_RRE(catch_chars)
+#' rre_peak <- batch_RRE(three_sites)
 #'
 #' }
 #' @importFrom Rdpack reprompt
@@ -226,89 +227,98 @@ batch_StreamStatsCatchChars <- function(watersheds){
 #'
 
 
-batch_RRE <- function(data) {
+batch_RRE <- function(data, parallel = FALSE) {
 
-if(!'sf' %in% class(data)){stop('need an sf object with state, wkID and group variables.')}
+  if(!'sf' %in% class(data)){stop('need an sf object with state, wkID and group variables.')}
   data <- data %>% sf::st_drop_geometry()
 
 
 
-get_peak_flow <- function(state, wkID, group){
+  get_peak_flow <- function(state, wkID, group){
 
-variables <- c( "Name", "code", "Description", "Value", "Equation", "IntervalBounds.Lower", "IntervalBounds.Upper")
+    variables <- c( "Name", "code", "Description", "Value", "Equation", "IntervalBounds.Lower", "IntervalBounds.Upper")
 
-  base_url <- paste0(
-    "https://streamstats.usgs.gov/streamstatsservices/flowstatistics.json?rcode=",state,"&workspaceID=",
-    wkID,
-    "&includeflowtypes=true"
-  )
+    base_url <- paste0(
+      "https://streamstats.usgs.gov/streamstatsservices/flowstatistics.json?rcode=",state,"&workspaceID=",
+      wkID,
+      "&includeflowtypes=true"
+    )
 
-  # try to download the data
-  error <- httr::GET(url = base_url,
-                     httr::write_disk(path = file.path(tempdir(),
-                                                       "peak_tmp.json"),overwrite = TRUE))
-  if(error$status_code == 500){
+    # try to download the data
+    error <- httr::GET(url = base_url,
+                       httr::write_disk(path = file.path(tempdir(),
+                                                         "peak_tmp.json"),overwrite = TRUE))
+    if(error$status_code == 500){
 
-    stop(message('Sever Error 500'))
+      stop(message('Sever Error 500'))
 
-  } else if(error$status_code == 400){
+    } else if(error$status_code == 400){
 
-    stop(message('Sever Error 400'))
+      stop(message('Sever Error 400'))
 
-  } else if(error$status_code == 404){
+    } else if(error$status_code == 404){
 
-    stop(message('Sever Error 404'))
+      stop(message('Sever Error 404'))
 
-  } else {
-  peak_s <- jsonlite::fromJSON(file.path(tempdir(),"peak_tmp.json"))
+    } else {
+      peak_s <- jsonlite::fromJSON(file.path(tempdir(),"peak_tmp.json"))
 
-  peak_s <- (peak_s$RegressionRegions[[1]])[[6]][[1]] %>%
-    select(any_of(variables)) %>% mutate(group = group)
+      peak_s <- (peak_s$RegressionRegions[[1]])[[6]][[1]] %>%
+        select(any_of(variables)) %>% mutate(group = group)
+    }
   }
- }
-if(length(data$group)>1){
+  if(length(data$group)>1){
 
+    if(isTRUE(parallel)){
 
-  peak_rre <- data %>%
-  split(.$group) %>%
-  furrr::future_map(safely(~get_peak_flow(.$state, .$wkID, .$group))) %>%
-  purrr::keep(~length(.) != 0) %>%
-  purrr::map(~.x[['result']])
+    peak_rre <- data %>%
+      split(.$group) %>%
+      furrr::future_map(safely(~get_peak_flow(.$state, .$wkID, .$group))) %>%
+      purrr::keep(~length(.) != 0) %>%
+      purrr::map(~.x[['result']])
 
+    } else {
 
- peak_rre <- peak_rre %>%
-    plyr::rbind.fill() %>%
-   dplyr::mutate(return_interval = 1/(readr::parse_number(Name)*0.01))
+      peak_rre <- data %>%
+        split(.$group) %>%
+        purrr::map(safely(~get_peak_flow(.$state, .$wkID, .$group))) %>%
+        purrr::keep(~length(.) != 0) %>%
+        purrr::map(~.x[['result']])
+    }
+
+    peak_rre <- peak_rre %>%
+      plyr::rbind.fill() %>%
+      dplyr::mutate(return_interval = 1/(readr::parse_number(Name)*0.01))
 
     peak_group <- peak_rre %>%
-    group_by(group) %>%
-    dplyr::slice(n=1)
+      group_by(group) %>%
+      dplyr::slice(n=1)
 
 
 
-  if(nrow(filter(data, !group %in% peak_group$group)) > 0) {
+    if(nrow(filter(data, !group %in% peak_group$group)) > 0) {
 
-    print(paste0("Group(s) not generated: ",
-                 filter(data, !group %in% peak_group$group) %>% select(group)))
+      print(paste0("Group(s) not generated: ",
+                   filter(data, !group %in% peak_group$group) %>% select(group)))
+    } else {
+
+      print(paste0('All Groups Delineated'))
+
+
+    }
+
   } else {
-
-    print(paste0('All Groups Delineated'))
-
-
-  }
-
-} else {
 
     peak_rre <- get_peak_flow(data$state, data$wkID, data$group)
 
     peak_rre <- peak_rre %>%
       plyr::rbind.fill() %>%
-    dplyr::mutate(return_interval = 1/(readr::parse_number(Name)*0.01))
+      dplyr::mutate(return_interval = 1/(readr::parse_number(Name)*0.01))
 
 
-}
+  }
 
-return(peak_rre)
+  return(peak_rre)
 }
 
 
@@ -433,9 +443,9 @@ batch_culverts <- function(ss, rre, bfw,geo = 1) {
                                        0.451*(drain_area^0.82)*(precip_drain^1.22)*geo_known,
                                        0.594*(drain_area^0.8)*(precip_drain^1.2)*geo_known),
                         bankfull_width_regression = c(0.041*(drain_area^0.47)*(precip_drain^0.86)*(bf_regres^1.14),
-                                           0.465*(drain_area^0.4)*(precip_drain^0.61)*(bf_regres^1.02),
-                                           0.663*(drain_area^0.38)*(precip_drain^0.58)*(bf_regres^1.01),
-                                           0.899*(drain_area^0.37)*(precip_drain^0.55)*(bf_regres^1)),
+                                                      0.465*(drain_area^0.4)*(precip_drain^0.61)*(bf_regres^1.02),
+                                                      0.663*(drain_area^0.38)*(precip_drain^0.58)*(bf_regres^1.01),
+                                                      0.899*(drain_area^0.37)*(precip_drain^0.55)*(bf_regres^1)),
                         source = c("Omang, Parrett and Hull"),
                         group = ss$group[[i]])
 
@@ -445,9 +455,9 @@ batch_culverts <- function(ss, rre, bfw,geo = 1) {
                                        13.2*(drain_area^0.823)*(precip_drain^1.09)*(for_known+1)^(-0.652),
                                        18.7*(drain_area^0.812)*(precip_drain^1.06)*(for_known+1)^(-0.664)),
                         bankfull_width_regression = c(0.281*(bf_regres^1.98),
-                                           1.75*(bf_regres^1.72),
-                                           2.34*(bf_regres^1.69),
-                                           2.99*(bf_regres^1.66)),
+                                                      1.75*(bf_regres^1.72),
+                                                      2.34*(bf_regres^1.69),
+                                                      2.99*(bf_regres^1.66)),
                         source = c("Parrett & Johnson"),
                         group = ss$group[[i]])
     }
@@ -476,28 +486,28 @@ batch_culverts <- function(ss, rre, bfw,geo = 1) {
   } else {
 
 
-  culvert_usgs <- rre %>% select(basin_char = Value, ReturnInterval = return_interval) %>%
+    culvert_usgs <- rre %>% select(basin_char = Value, ReturnInterval = return_interval) %>%
       mutate(source = "USGS Regression", group = rre$group) %>% dplyr::filter(ReturnInterval %in% c(2,25,50,100))
 
 
-  culvert_usgs <- culvert_usgs %>% dplyr::filter(group %in% ss$group)
+    culvert_usgs <- culvert_usgs %>% dplyr::filter(group %in% ss$group)
 
-  together <- plyr::rbind.fill(Omang_parrett_hull_flows, parrett_and_johnson, culvert_usgs)
-
-
+    together <- plyr::rbind.fill(Omang_parrett_hull_flows, parrett_and_johnson, culvert_usgs)
 
 
-  if (missing(bfw)) {
 
-    together_long <- together %>% pivot_longer(cols = c("basin_char", "bankfull_width_regression"), names_to = "Method") %>%
-      mutate(across(where(is.numeric), round, 0)) %>% mutate(Size = culvert_size(value))
 
-  } else {
-    together_long <- together %>% pivot_longer(cols = c("basin_char", "bankfull_width"), names_to = "Method") %>%
-      mutate(across(where(is.numeric), round, 0)) %>% mutate(Size = culvert_size(value))
+    if (missing(bfw)) {
 
+      together_long <- together %>% pivot_longer(cols = c("basin_char", "bankfull_width_regression"), names_to = "Method") %>%
+        mutate(across(where(is.numeric), round, 0)) %>% mutate(Size = culvert_size(value))
+
+    } else {
+      together_long <- together %>% pivot_longer(cols = c("basin_char", "bankfull_width"), names_to = "Method") %>%
+        mutate(across(where(is.numeric), round, 0)) %>% mutate(Size = culvert_size(value))
+
+    }
   }
-}
 
 }
 
@@ -525,7 +535,4 @@ culvert_size <- function(x) {
                               ifelse(x >= 65 & x <110,"(60 in)",
                                      ifelse(x >= 110 & x < 180,"(72 in)",
                                             ifelse(x >= 180 & x < 290,"(84 in)",
-                                                   ifelse(x >= 290 & x < 400,"(96 in)","(Bridge or Big Culvert!)"))))))))
-}
-
-
+                                                   ifelse(x >= 290 & x < 400,"(96 in)","(Bridge or Big Culvert!)"))))))))}

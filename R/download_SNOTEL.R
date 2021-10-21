@@ -569,7 +569,7 @@ reportSNOTELdv <- function(procDV, sites = NULL, days = 8) {
       # read in the snotel data
       df <- readr::read_csv(file.path(tempdir(),"snotel_tmp.csv"),comment = "#", col_types = cols())
 
-      # subsitute column names
+      # substitute column names
       df <- snotel_report_custom(df)
 
       df <- cbind.data.frame(meta_data[i,c(3,4,11)], df, row.names = NULL)
@@ -792,9 +792,7 @@ plot_reportSNOTEL <- function(report, time = "daily", type = "per") {
         labs(x = "Month", y = "SWE Percent of Median", title = "Start of Month SWE Percent of Median", fill = "Site Name") +
         facet_wrap(~wy)
 
-      g2 <-
-
-        report %>%
+      g2 <- report %>%
         mutate(month = factor(month, levels = c("Oct", "Nov", "Dec", "Jan", "Feb", "Mar",
                                                 "Apr", "May", "Jun", "Jul", "Aug", "Sep"))) %>%
         pivot_longer(cols = c(swe_current, swe_prev_year, snow_current, snow_prev_year), names_to = "stat") %>%

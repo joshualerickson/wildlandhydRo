@@ -25,7 +25,6 @@ Imports:
     purrr,
     geojsonsf,
     AOI,
-    streamstats,
     dataRetrieval,
     stringr,
     ape,
@@ -42,10 +41,11 @@ Imports:
     scales,
     zoo,
     forcats,
-    ggtext
+    ggtext,
+    nhdplusTools,
+    furrr
 Remotes: 
          mikejohnson51/AOI, 
-         markwh/streamstats,
          USGS-R/smwrBase
 Suggests: 
     knitr,

@@ -414,89 +414,35 @@ plot_reportDist <- function(report) {
     facet_wrap(~stat, scales = "free")
 }
 
-
-#' Get Reoccurrence Intervals
-#'
-#' @param freqDV A previously create \link[wildlandhydRo]{batch_frequency} object.
-#' @param values A \code{numeric} vector
-#' @param distr Distribution from a batch_frequency object, see notes.
-#' @param RI A \code{numeric} vector. default is \code{NULL}
-#'
-#' @return A tibble print out and ggplot graph.
-#' @importFrom scales comma
-#' @export
-#' @note The distributions that are acceptable: "Gumbel", "LogPearson", "GEV", "Normal", "Lognormal", "Pearson", "Weibull".
-get_RI <- function(freqDV, values, distr, RI = NULL) {
-
-
-  if(is.null(RI)){
-
-    RI_dist <- freqDV %>% filter(Distribution == {{ distr }})
-
-    l1 <- loess(ReturnInterval~Value, data = RI_dist, span = 0.3)
-
-    #get values
-
-    pred <- predict(l1, newdata = {{ values }})
-    pred <- data.frame(ReturnInterval = pred, Value = {{ values }})
-
-    plot_pred <- RI_dist  %>% ggplot(aes(ReturnInterval, Value)) +
-      geom_smooth(span = 0.3, method = 'loess') +
-      geom_point(data = pred %>% na.omit(), aes(ReturnInterval, Value), col = "red", size = 2) +
-      ggrepel::geom_label_repel(data = pred %>% na.omit(),
-                                aes(label = paste(Value, " ~ ",
-                                                  scales::comma(round(ReturnInterval, 0), 1), " yr")), force = 5) +
-                                  theme_bw() +
-                                  labs(x = "Return Interval", y = "Value",
-                                       title = paste0("Return Interval from a ", {{ distr }}, " Distribution"))
-
-                                print(tibble(pred))
-                                plot_pred
-
-  } else {
-
-    RI_dist <- freqDV %>% filter(Distribution == {{ distr }})
-
-    l1 <- loess(Value~ReturnInterval, data = RI_dist, span = 0.3)
-
-    #get values
-
-    pred <- predict(l1, newdata = {{ RI }})
-    pred <- data.frame(Value = pred, ReturnInterval = {{ RI }})
-
-    plot_pred <- RI_dist  %>% ggplot(aes(ReturnInterval, Value)) +
-      geom_smooth(method = 'loess', span = 0.3) +
-      geom_point(data = pred %>% na.omit(), aes(ReturnInterval, Value), col = "red", size = 2) +
-      ggrepel::geom_label_repel(data = pred %>% na.omit(),
-                                aes(label = paste0(ReturnInterval, " yr ~ ",
-                                                   scales::comma(round(Value, 0), 1))), force = 5) +
-      theme_bw() +
-      labs(x = "Return Interval", y = "Value",
-           title = paste0("Return Interval from a ", {{ distr }}, " Distribution"))
-
-    print(tibble(pred))
-    plot_pred
-  }
-}
-
-#' Title
-#'
+#' Get Exceedance Probability
+#' @description Takes a numeric vector to find plotting position methods for exceedance probability.
 #' @param x A numeric vector
-#'
+#' @param a A numeric value for Gringoten formula
 #' @return A data.frame with exceedance probabilities and return periods.
+#' @note Methods used are: California, Hazen, Weibull, Chegodayev, Blom and Gringoten.
+#'
 #'
 
-get_exceedence <- function(x) {
+get_exceedance <- function(x, a = 0.375) {
 
   #code taken from JP Gannon
   #https://vt-hydroinformatics.github.io/floods.html#calculate-exceedance-probability-and-return-period
-  ranks <- data.frame(ranks = rank(-x), x = x)
+  ranks <- data.frame(m = rank(-x), x = x)
 
-  N <- length(ranks$ranks)
-  a <- 0.44
-  ex_prob <- ranks %>% mutate(exceedance_probability = (ranks - a) / (N + 1 - (2*a))) %>%
-    mutate(non_exceedance_probability = 1 - exceedance_probability) %>%
-    mutate(return_interval = 1 / (1-non_exceedance_probability))
+  N <- length(ranks$m)
+
+  ex_prob <- ranks %>% mutate(gringoten = (m - a) / (N + 1 - (2*a)),
+                              california = m/N,
+                              hazen = (m-0.5)/N,
+                              weibull = m/(N+1),
+                              chegodayev = (m-0.3)/(N+0.4),
+                              blom = (m-0.44)/(N+0.12)) %>%
+    mutate(ri_gringoten = 1 / gringoten,
+           ri_california = 1/california,
+           ri_hazen = 1/hazen,
+           ri_weibull = 1/weibull,
+           ri_chegodayev = 1/chegodayev,
+           ri_blom = 1/blom)
 
 }
 
