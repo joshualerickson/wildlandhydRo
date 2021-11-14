@@ -110,7 +110,7 @@ batch_SNOTELdv <- function(sites, parallel = FALSE, ...) {
 
 
   # download meta-data
-  meta_data <- wildlandhydRo::meta_data[which(meta_data$site_id %in% sites),]
+  meta_data <- meta_data[which(meta_data$site_id %in% sites),]
 
   # check if the provided site index is valid
   if (nrow(meta_data) == 0){
@@ -201,11 +201,11 @@ wySNOTEL <- function(procDV, sites = NULL,  parallel = FALSE, ...) {
 
   if(!missing(procDV)) {
 
-    meta_data <- wildlandhydRo::meta_data[which(meta_data$site_id %in% procDV$site_id),]
+    meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
 
   } else {
 
-    meta_data <- wildlandhydRo::meta_data[which(meta_data$site_id %in% sites),]
+    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
 
 
   }
@@ -299,11 +299,11 @@ wymSNOTEL <- function(procDV, sites = NULL, parallel = FALSE, ...) {
   if(is.null(sites) & missing(procDV)){stop("Need at least one argument!")}
   if(!missing(procDV)) {
 
-    meta_data <- wildlandhydRo::meta_data[which(meta_data$site_id %in% procDV$site_id),]
+    meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
 
   } else {
 
-    meta_data <- wildlandhydRo::meta_data[which(meta_data$site_id %in% sites),]
+    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
 
 
   }
@@ -429,11 +429,11 @@ hourlySNOTEL <- function(procDV, sites = NULL,  days = 7, parallel = FALSE, ...)
   if(is.null(sites) & missing(procDV)){stop("Need at least one argument!")}
  if(!missing(procDV)) {
 
-   meta_data <- wildlandhydRo::meta_data[which(meta_data$site_id %in% procDV$site_id),]
+   meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
 
   } else {
 
-    meta_data <- wildlandhydRo::meta_data[which(meta_data$site_id %in% sites),]
+    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
 
 
     }
@@ -514,12 +514,12 @@ reportSNOTELdv <- function(procDV, sites = NULL, days = 8) {
 
   if(missing(procDV)) {
 
-    meta_data <- wildlandhydRo::meta_data[which(meta_data$site_id %in% sites),]
+    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
 
 
   } else {
 
-    meta_data <- wildlandhydRo::meta_data[which(meta_data$site_id %in% procDV$site_id),]
+    meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
 
   }
 
@@ -605,12 +605,12 @@ reportSNOTELmv <- function(procDV, sites = NULL) {
 
   if(missing(procDV)) {
 
-    meta_data <- wildlandhydRo::meta_data[which(meta_data$site_id %in% sites),]
+    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
 
 
   } else {
 
-    meta_data <- wildlandhydRo::meta_data[which(meta_data$site_id %in% procDV$site_id),]
+    meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
 
   }
 
