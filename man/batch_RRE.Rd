@@ -4,10 +4,12 @@
 \alias{batch_RRE}
 \title{Batch USGS Regional Regression Estimates (RRE)}
 \usage{
-batch_RRE(data)
+batch_RRE(data, parallel = FALSE)
 }
 \arguments{
 \item{data}{A previously created \link[wildlandhydro]{batch_StreamStats} object.}
+
+\item{parallel}{\code{logical} indicating whether to use future_map().}
 }
 \value{
 Returns a data.frame with associated regional regression estimates.
@@ -26,7 +28,7 @@ data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
                  Lon = c(-115.54327, -114.75546, -116.05935),
                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
 
-data <- data \%>\% sf::st_as_sf(coords('Lon', 'Lat'))
+data <- data \%>\% sf::st_as_sf(coords = c('Lon', 'Lat'))
 
 three_sites <- batch_StreamStats(data, group = 'Site',
                                   crs = 4326)

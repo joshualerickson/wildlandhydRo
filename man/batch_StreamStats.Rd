@@ -4,7 +4,7 @@
 \alias{batch_StreamStats}
 \title{Download Multiple Stream Stats Locations}
 \usage{
-batch_StreamStats(data, group, crs = 4326)
+batch_StreamStats(data, group, crs = 4326, parallel = FALSE)
 }
 \arguments{
 \item{data}{A \code{data.frame} with \code{lon,lat} variables. \code{optional}}
@@ -12,6 +12,8 @@ batch_StreamStats(data, group, crs = 4326)
 \item{group}{A vector to group by. \code{optional}}
 
 \item{crs}{A \code{numeric} crs value}
+
+\item{parallel}{\code{logical} indicating whether to use future_map().}
 }
 \value{
 Returns an sf (simple feature) object with associated basin characteristics.
@@ -29,7 +31,7 @@ which use methods from \insertCite{ries2017streamstats}{wildlandhydRo}
 data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
                  Lon = c(-115.54327, -114.75546, -116.05935),
                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
-data <- data \%>\% sf::st_as_sf(coords('Lon', 'Lat'))
+data <- data \%>\% sf::st_as_sf(coords = c('Lon', 'Lat'))
 three_sites <- batch_StreamStats(data, group = 'Site',
                                   crs = 4326)
 

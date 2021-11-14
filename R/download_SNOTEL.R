@@ -110,10 +110,10 @@ batch_SNOTELdv <- function(sites, parallel = FALSE, ...) {
 
 
   # download meta-data
-  meta_data <- meta_data[which(meta_data$site_id %in% sites),]
+  meta_snotel <- meta_snotel[which(meta_snotel$site_id %in% sites),]
 
   # check if the provided site index is valid
-  if (nrow(meta_data) == 0){
+  if (nrow(meta_snotel) == 0){
     stop("no site found with the requested ID")
   }
 
@@ -155,7 +155,7 @@ batch_SNOTELdv <- function(sites, parallel = FALSE, ...) {
 
                 if(isTRUE(parallel)){
 
-                  snotel_data <- meta_data %>%
+                  snotel_data <- meta_snotel %>%
                     split(.$site_id) %>%
                     furrr::future_map(safely(~snotel_daily(.))) %>%
                     purrr::keep(~length(.) != 0) %>%
@@ -164,7 +164,7 @@ batch_SNOTELdv <- function(sites, parallel = FALSE, ...) {
 
                 } else {
 
-                  snotel_data <- meta_data %>%
+                  snotel_data <- meta_snotel %>%
                     split(.$site_id) %>%
                     purrr::map(safely(~snotel_daily(.)))%>%
                     purrr::keep(~length(.) != 0) %>%
@@ -201,17 +201,17 @@ wySNOTEL <- function(procDV, sites = NULL,  parallel = FALSE, ...) {
 
   if(!missing(procDV)) {
 
-    meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
+    meta_snotel <- meta_snotel[which(meta_snotel$site_id %in% procDV$site_id),]
 
   } else {
 
-    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
+    meta_snotel <- meta_snotel[which(meta_snotel$site_id %in% sites),]
 
 
   }
 
   # check if the provided site index is valid
-  if (nrow(meta_data) == 0){
+  if (nrow(meta_snotel) == 0){
     stop("no site found with the requested ID")
   }
 
@@ -256,7 +256,7 @@ snotel_yearly <- function(md){
 }
 if(isTRUE(parallel)){
 
-  snotel_download_wy <- meta_data %>%
+  snotel_download_wy <- meta_snotel %>%
     split(.$site_id) %>%
     furrr::future_map(safely(~snotel_yearly(.))) %>%
     purrr::keep(~length(.) != 0) %>%
@@ -265,7 +265,7 @@ if(isTRUE(parallel)){
 
 } else {
 
-  snotel_download_wy <- meta_data %>%
+  snotel_download_wy <- meta_snotel %>%
     split(.$site_id) %>%
     purrr::map(safely(~snotel_yearly(.)))%>%
     purrr::keep(~length(.) != 0) %>%
@@ -299,11 +299,11 @@ wymSNOTEL <- function(procDV, sites = NULL, parallel = FALSE, ...) {
   if(is.null(sites) & missing(procDV)){stop("Need at least one argument!")}
   if(!missing(procDV)) {
 
-    meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
+    meta_snotel <- meta_snotel[which(meta_snotel$site_id %in% procDV$site_id),]
 
   } else {
 
-    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
+    meta_snotel <- meta_snotel[which(meta_snotel$site_id %in% sites),]
 
 
   }
@@ -349,7 +349,7 @@ wymSNOTEL <- function(procDV, sites = NULL, parallel = FALSE, ...) {
 
       if(isTRUE(parallel)){
 
-        snotel_download_wym <- meta_data %>%
+        snotel_download_wym <- meta_snotel %>%
           split(.$site_id) %>%
           furrr::future_map(safely(~snotel_wym(.))) %>%
           purrr::keep(~length(.) != 0) %>%
@@ -358,7 +358,7 @@ wymSNOTEL <- function(procDV, sites = NULL, parallel = FALSE, ...) {
 
       } else {
 
-        snotel_download_wym <- meta_data %>%
+        snotel_download_wym <- meta_snotel %>%
           split(.$site_id) %>%
           purrr::map(safely(~snotel_wym(.)))%>%
           purrr::keep(~length(.) != 0) %>%
@@ -429,17 +429,17 @@ hourlySNOTEL <- function(procDV, sites = NULL,  days = 7, parallel = FALSE, ...)
   if(is.null(sites) & missing(procDV)){stop("Need at least one argument!")}
  if(!missing(procDV)) {
 
-   meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
+   meta_snotel <- meta_snotel[which(meta_snotel$site_id %in% procDV$site_id),]
 
   } else {
 
-    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
+    meta_snotel <- meta_snotel[which(meta_snotel$site_id %in% sites),]
 
 
     }
 
   # check if the provided site index is valid
-  if (nrow(meta_data) == 0){
+  if (nrow(meta_snotel) == 0){
     stop("no site found with the requested ID")
   }
 
@@ -474,7 +474,7 @@ snotel_hourly <- function(md, choice_days){
 
 if(isTRUE(parallel)){
 
-  snotel_hourly_download <- meta_data %>%
+  snotel_hourly_download <- meta_snotel %>%
     split(.$site_id) %>%
     furrr::future_map(safely(~snotel_hourly(., choice_days = choice_days))) %>%
     purrr::keep(~length(.) != 0) %>%
@@ -483,7 +483,7 @@ if(isTRUE(parallel)){
 
 } else {
 
-  snotel_hourly_download <- meta_data %>%
+  snotel_hourly_download <- meta_snotel %>%
     split(.$site_id) %>%
     purrr::map(safely(~snotel_hourly(., choice_days = choice_days)))%>%
     purrr::keep(~length(.) != 0) %>%
@@ -514,17 +514,17 @@ reportSNOTELdv <- function(procDV, sites = NULL, days = 8) {
 
   if(missing(procDV)) {
 
-    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
+    meta_snotel <- meta_snotel[which(meta_snotel$site_id %in% sites),]
 
 
   } else {
 
-    meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
+    meta_snotel <- meta_snotel[which(meta_snotel$site_id %in% procDV$site_id),]
 
   }
 
   # check if the provided site index is valid
-  if (nrow(meta_data) == 0){
+  if (nrow(meta_snotel) == 0){
     stop("no site found with the requested ID")
   }
 
@@ -535,22 +535,22 @@ reportSNOTELdv <- function(procDV, sites = NULL, days = 8) {
 
   #run for loop over api, pulling necessary data.
 
-  for (i in 1:nrow(meta_data)){
+  for (i in 1:nrow(meta_snotel)){
     # loop over selection, and download the data
 
     tryCatch({
 
       # some feedback on the download progress
       message(sprintf("Downloading site: %s, with id: %s\n",
-                      meta_data$site_id[i],
-                      meta_data$site_name[i]))
+                      meta_snotel$site_id[i],
+                      meta_snotel$site_name[i]))
 
       # download url (metric by default!)
       base_url <- paste0(
         "https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customMultiTimeSeriesGroupByStationReport/daily/start_of_period/",
-        meta_data$site_id[i], ":",
-        meta_data$state[i], ":",
-        meta_data$network[i],
+        meta_snotel$site_id[i], ":",
+        meta_snotel$state[i], ":",
+        meta_snotel$network[i],
         "%7Cid=%22%22%7Cname/-",choice_days,",0/WTEQ::pctOfMedian_1981,WTEQ::value,WTEQ::prevValue,SNWD::value,SNWD::prevValue"
       )
 
@@ -563,7 +563,7 @@ reportSNOTELdv <- function(procDV, sites = NULL, days = 8) {
       # catch error and remove resulting zero byte files
       if (httr::http_error(error)) {
         warning(sprintf("Downloading site %s failed, removed empty file.",
-                        meta_data$site_id[i]))
+                        meta_snotel$site_id[i]))
       }
 
       # read in the snotel data
@@ -572,7 +572,7 @@ reportSNOTELdv <- function(procDV, sites = NULL, days = 8) {
       # substitute column names
       df <- snotel_report_custom(df)
 
-      df <- cbind.data.frame(meta_data[i,c(3,4,11)], df, row.names = NULL)
+      df <- cbind.data.frame(meta_snotel[i,c(3,4,11)], df, row.names = NULL)
 
       #combine df with blank dataframe (usgs_download_hourly)
 
@@ -605,17 +605,17 @@ reportSNOTELmv <- function(procDV, sites = NULL) {
 
   if(missing(procDV)) {
 
-    meta_data <- meta_data[which(meta_data$site_id %in% sites),]
+    meta_snotel <- meta_snotel[which(meta_snotel$site_id %in% sites),]
 
 
   } else {
 
-    meta_data <- meta_data[which(meta_data$site_id %in% procDV$site_id),]
+    meta_snotel <- meta_snotel[which(meta_snotel$site_id %in% procDV$site_id),]
 
   }
 
   # check if the provided site index is valid
-  if (nrow(meta_data) == 0){
+  if (nrow(meta_snotel) == 0){
     stop("no site found with the requested ID")
   }
 
@@ -624,21 +624,21 @@ reportSNOTELmv <- function(procDV, sites = NULL) {
 
   #run for loop over api, pulling necessary data.
 
-  for (i in 1:nrow(meta_data)){
+  for (i in 1:nrow(meta_snotel)){
     # loop over selection, and download the data
 
     tryCatch({
 
       # some feedback on the download progress
       message(sprintf("Downloading site: %s, with id: %s\n",
-                      meta_data$site_id[i],
-                      meta_data$site_name[i]))
+                      meta_snotel$site_id[i],
+                      meta_snotel$site_name[i]))
       # download url (metric by default!)
       base_url <- paste0(
         "https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customMultiTimeSeriesGroupByStationReport/monthly/start_of_period/",
-        meta_data$site_id[i], ":",
-        meta_data$state[i], ":",
-        meta_data$network[i],
+        meta_snotel$site_id[i], ":",
+        meta_snotel$state[i], ":",
+        meta_snotel$network[i],
         "%7Cid=%22%22%7Cname/POR_BEGIN,POR_END/WTEQ::pctOfMedian_1981,WTEQ::value,WTEQ::prevValue,SNWD::value,SNWD::prevValue"
       )
 
@@ -651,7 +651,7 @@ reportSNOTELmv <- function(procDV, sites = NULL) {
       # catch error and remove resulting zero byte files
       if (httr::http_error(error)) {
         warning(sprintf("Downloading site %s failed, removed empty file.",
-                        meta_data$site_id[i]))
+                        meta_snotel$site_id[i]))
       }
 
       # read in the snotel data
@@ -660,7 +660,7 @@ reportSNOTELmv <- function(procDV, sites = NULL) {
       # subsitute column names
       df <- snotel_report_custom(df)
 
-      df <- cbind.data.frame(meta_data[i,c(3,4,11)], df, row.names = NULL)
+      df <- cbind.data.frame(meta_snotel[i,c(3,4,11)], df, row.names = NULL)
 
       #combine df with blank dataframe (usgs_download_hourly)
 
@@ -823,7 +823,7 @@ get_SNOTEL = function(AOI){
 
   AOI_type <- sf::st_geometry_type(AOI)
 
- meta_sf <- meta_data %>% mutate(row.id = row_number()) %>%
+ meta_sf <- meta_snotel %>% mutate(row.id = row_number()) %>%
     sf::st_as_sf(coords = c("longitude", "latitude")) %>% sf::st_set_crs(4269)
 
   if(AOI_type == "POINT"){
