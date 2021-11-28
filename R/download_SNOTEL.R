@@ -655,7 +655,7 @@ reportSNOTELmv <- function(procDV, sites = NULL) {
       }
 
       # read in the snotel data
-      df <- readr::read_csv(file.path(tempdir(),"snotel_tmp.csv"),comment = "#", col_types = cols())
+      df <- readr::read_csv(file.path(tempdir(),"snotel_tmp.csv"),skip = 62, col_types = cols())
 
       # subsitute column names
       df <- snotel_report_custom(df)
