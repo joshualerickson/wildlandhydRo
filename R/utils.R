@@ -46,3 +46,33 @@ smooth_func <- function(percentiles, smooth.span){
             p05 = predict(loess(p05~day.of.year, data = percentiles, span = smooth.span)),
             min = predict(loess(min~day.of.year, data = percentiles, span = smooth.span)))
 }
+
+
+
+#function used to filter through different names but same result
+
+attribute_filter_darea = function(ss){
+
+  if(ss$state %in% c('ID', 'OR', 'WA')){
+
+    ss$DRNAREA
+
+  } else if (ss$state %in% 'MT'){
+
+    ss$CONTDA
+  } else{}
+
+}
+
+attribute_filter_forest = function(ss){
+
+  if(ss$state %in% c( 'WA')){
+
+    ss$CANOPY_PCT
+
+  } else if (ss$state %in% c('OR', 'MT', 'ID')){
+
+    ss$FOREST
+  } else{}
+
+}

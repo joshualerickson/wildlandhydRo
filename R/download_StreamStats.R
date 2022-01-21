@@ -29,7 +29,8 @@
 #' data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
 #'                  Lon = c(-115.54327, -114.75546, -116.05935),
 #'                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
-#' data <- data %>% sf::st_as_sf(coords = c('Lon', 'Lat'))
+#' data <- data %>% sf::st_as_sf(coords = c('Lon', 'Lat')) %>% sf::st_set_crs(4326)
+#'
 #' three_sites <- batch_StreamStats(data, group = 'Site',
 #'                                   crs = 4326)
 #'
@@ -175,7 +176,8 @@ batch_StreamStats <- function(data, group, crs = 4326, parallel = FALSE){
     dplyr::select(group,geometry) %>%
     dplyr::right_join(final_df_wrangle, by = 'group') %>%
     dplyr::relocate(geometry,.after = dplyr::last_col()) %>%
-    sf::st_as_sf()
+    sf::st_as_sf() %>%
+    dplyr::ungroup()
 
   dropped_geom <- final_sf %>% sf::st_drop_geometry()
 
@@ -207,7 +209,7 @@ batch_StreamStats <- function(data, group, crs = 4326, parallel = FALSE){
 #'                  Lon = c(-115.54327, -114.75546, -116.05935),
 #'                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
 #'
-#' data <- data %>% sf::st_as_sf(coords = c('Lon', 'Lat'))
+#' data <- data %>% sf::st_as_sf(coords = c('Lon', 'Lat')) %>% sf::st_set_crs(4326)
 #'
 #' three_sites <- batch_StreamStats(data, group = 'Site',
 #'                                   crs = 4326)
@@ -365,15 +367,10 @@ batch_culverts <- function(ss, rre, bfw,geo = 1) {
 
   } else {
     bfw_test <- data.frame(bfw_test = {{ bfw }})
-    if(!nrow(bfw_test) == nrow(ss)){stop("bfw is not the same length as ss")}
+    if(nrow(bfw_test) != nrow(ss)){stop("bfw is not the same length as ss")}
     ss <- ss %>% mutate(bfw = {{ bfw }}, geo = {{ geo }})
   }
 
-
-
-  ss <- ss %>% dplyr::filter(state %in% "MT")
-
-  if(nrow(ss)<1) {stop("No states from Montana")}
 
   if (!"group" %in% colnames(ss)) {stop("Need a 'group' variable, like 'group' from batch_StreamStats()")}
 
@@ -386,7 +383,7 @@ batch_culverts <- function(ss, rre, bfw,geo = 1) {
 
   for (i in 1:nrow(ss)){
 
-    drain_area <- ss$CONTDA[[i]]
+    drain_area <- attribute_filter_darea(ss[i,])
 
     precip_drain <- ss$PRECIP[[i]]
 
@@ -394,13 +391,13 @@ batch_culverts <- function(ss, rre, bfw,geo = 1) {
 
     geo_known <- ss$geo[[i]]
 
-    for_known <- ss$FOREST[[i]]
+    for_known <- attribute_filter_forest(ss[i,])
 
 
 
-    bf_regres <- if(precip_drain < 30) {
+    bf_regres <- if(isTRUE(precip_drain < 30)) {
       3.99*drain_area^0.441
-    } else if (precip_drain > 45) {
+    } else if (isTRUE(precip_drain > 45)) {
 
       7.7*drain_area^0.441
     } else {

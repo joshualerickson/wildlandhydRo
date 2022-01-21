@@ -28,7 +28,7 @@ data <- tibble(Lat = c(48.30602, 48.62952, 48.14946),
                  Lon = c(-115.54327, -114.75546, -116.05935),
                    Site = c("Granite Creek", "Louis Creek", "WF Blue Creek"))
 
-data <- data \%>\% sf::st_as_sf(coords = c('Lon', 'Lat'))
+data <- data \%>\% sf::st_as_sf(coords = c('Lon', 'Lat')) \%>\% sf::st_set_crs(4326)
 
 three_sites <- batch_StreamStats(data, group = 'Site',
                                   crs = 4326)

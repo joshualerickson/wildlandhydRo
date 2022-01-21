@@ -1,0 +1,13 @@
+utils::globalVariables(c(".", "..density..", "Base-flow", "Date", "Distribution", "Flow", "Maximum", "Mean",
+  "Median", "Minimum", "Name", "Percentile", "ReturnInterval", "Standard_Deviation",
+  "Station", "Total", "Flow", "Value", "alt_va", "any_of", "atmf", "bflow", "bflowsum",
+  "blom", "california", "characteristic_id", "characteristic_value", "chegodayev", "code",
+  "current_daily_mean_flow", "current_mean_monthly_flow", "data", "datetime", "day.of.year",
+  "day_nu", "dec_lat_va", "dec_long_va", "drain_area_va", "drainage_area", "drainage_area_cut",
+  "fl_val", "flow", "flow_sum", "geometry", "gringoten", "group", "hazen", "ind", "m", "m_d",
+  "mean_va", "month_abb", "month_day", "month_nu", "name", "obsp", "p00", "p05", "p10", "p25",
+  "p75", "pct", "peak_dt", "peak_va", "percentiles", "return_interval", "rollMean", "row.id",
+  "rowid", "sdata", "season", "sfin", "site_name", "site_no", "snow_current", "snow_depth",
+  "snow_prev_year", "snow_water_equivalent", "state.abb", "state.name", "station_nm", "swe_current",
+  "swe_percent_median", "swe_prev_year", "value", "value1", "values", "weibull", "wkID", "wy", "x",
+  "xend", "y", "year_month", "year_nu", "yend"))
