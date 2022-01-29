@@ -15,7 +15,7 @@ plot_baseflow(procDV, sites = NULL, wy, parallel = FALSE, ...)
 
 \item{parallel}{\code{logical} indicating whether to use future_map() if using \code{sites} argument.}
 
-\item{...}{arguments to pass on to \link[furrr]{future_map} and \link[wildlandhydRo]{batch_USGSdv}.}
+\item{...}{arguments to pass on to \link[furrr]{future_map}, \link[wildlandhydRo]{batch_USGSdv} and \link[lfstat]{baseflow}.}
 }
 \value{
 

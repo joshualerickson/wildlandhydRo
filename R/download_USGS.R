@@ -466,7 +466,7 @@ hourlyUSGS <- function(procDV, sites = NULL, days = 7, parallel = FALSE, ...) {
 #' @param sites A \code{character} USGS NWIS site.
 #' @param wy A \code{numeric} or \code{character} water year, e.g. 1990:2000, 1990, or c("1990", "2000").
 #' @param parallel \code{logical} indicating whether to use future_map() if using \code{sites} argument.
-#' @param ... arguments to pass on to \link[furrr]{future_map} and \link[wildlandhydRo]{batch_USGSdv}.
+#' @param ... arguments to pass on to \link[furrr]{future_map}, \link[wildlandhydRo]{batch_USGSdv} and \link[lfstat]{baseflow}.
 #' @importFrom dplyr rename filter
 #' @importFrom ggplot2 ggplot geom_line theme_light labs scale_color_manual facet_wrap
 #' @importFrom tidyr pivot_longer
@@ -497,7 +497,7 @@ plot_baseflow <- function(procDV, sites = NULL, wy, parallel = FALSE, ...) {
 
   usgs_baseflow <- usgs_raw  %>%
     filter(wy %in% {{ wy }}) %>%
-    group_by(Station) %>% mutate(bf = lfstat::baseflow(Flow)) %>%
+    group_by(Station) %>% mutate(bf = lfstat::baseflow(Flow, ...)) %>%
     rename(`Total Flow` = "Flow", `Base-flow` = "bf")
 
 if(length(unique(usgs_baseflow$Station))>1){
