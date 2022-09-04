@@ -19,7 +19,6 @@ library(kableExtra)
 library(tidyverse)
 library(AOI)
 library(nhdplusTools)
-load("D:/R_folder/R/Random/wildlandhydRo.Rdata")
 ```
 
 ---
@@ -42,8 +41,14 @@ The goal of wildlandhydRo is to create wrapper functions around commonly used pa
 
 You can install the development version from [GitHub](https://github.com/) with:
 
-``` r
-# install.packages("devtools")
+``` {r, eval = F}
+
+#due to GH issue #1
+install.packages("lmomRFA")
+install.packages("lfstat", repos="http://R-Forge.R-project.org")
+
+#now install
+install.packages('devtools')
 devtools::install_github("joshualerickson/wildlandhydRo")
 ```
 ## Examples

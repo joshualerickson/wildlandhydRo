@@ -20,7 +20,12 @@ You can install the development version from
 [GitHub](https://github.com/) with:
 
 ``` r
-# install.packages("devtools")
+#due to GH issue #1
+install.packages("lmomRFA")
+install.packages("lfstat", repos="http://R-Forge.R-project.org")
+
+#now install
+install.packages('devtools')
 devtools::install_github("joshualerickson/wildlandhydRo")
 ```
 
@@ -84,9 +89,10 @@ ggplot(water_year, aes(peak_dt, Peak)) +
   geom_line() +
   labs(title = 'Peak Flow per Water Year', 
        subtitle = paste0(water_year %>% slice(n=1) %>% .$Station))
+#> Error : The fig.showtext code chunk option must be TRUE
 ```
 
-<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />
 
 ``` r
 monthly <- wymUSGS(sites = '12304500')
@@ -94,9 +100,10 @@ ggplot(monthly, aes(year_month, coef_var)) +
   geom_line() +
   labs(title = 'Monthly Coefficient of Variance', 
        subtitle = paste0(monthly %>% slice(n=1) %>% .$Station))
+#> Error : The fig.showtext code chunk option must be TRUE
 ```
 
-<img src="man/figures/README-unnamed-chunk-4-2.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-5-2.png" width="100%" />
 
 ### Get Percentiles for Reporting
 
@@ -110,9 +117,10 @@ yaak_dv <- batch_USGSdv(sites = '12304500')
 usgs_rep <- reportUSGSdv(procDV = yaak_dv, days = 60)
 
 plot_reportUSGS(usgs_rep)
+#> Error : The fig.showtext code chunk option must be TRUE
 ```
 
-<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" />
 
 -   Monthly
 
@@ -120,9 +128,10 @@ plot_reportUSGS(usgs_rep)
 usgs_rep_month <- reportUSGSmv(procDV = yaak_dv)
 
 plot_reportUSGS(usgs_rep_month %>% filter(year_nu >2020), time = 'month')
+#> Error : The fig.showtext code chunk option must be TRUE
 ```
 
-<img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-7-1.png" width="100%" />
 
 ### Get a Drain Point
 
@@ -140,9 +149,10 @@ pt <- sf::st_as_sf(pt, coords = c('lon', 'lat'))
 basin <- get_Basin(pt)
 
 ggplot() + geom_sf(data = basin)
+#> Error : The fig.showtext code chunk option must be TRUE
 ```
 
-<img src="man/figures/README-unnamed-chunk-7-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-8-1.png" width="100%" />
 
 -   Basin Stats
 
@@ -156,6 +166,7 @@ basin_stats %>% sf::st_drop_geometry() %>%
   ggplot() + 
   geom_sf(aes(fill = value)) +
     facet_wrap(~name, nrow = 3) + theme_void()
+#> Error : The fig.showtext code chunk option must be TRUE
 ```
 
-<img src="man/figures/README-unnamed-chunk-8-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-9-1.png" width="100%" />
