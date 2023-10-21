@@ -43,7 +43,8 @@ Imports:
     forcats,
     ggtext,
     nhdplusTools,
-    furrr
+    furrr, 
+    MGBT
 Remotes: 
          mikejohnson51/AOI, 
          USGS-R/smwrBase
