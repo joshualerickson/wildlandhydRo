@@ -36,6 +36,8 @@ if(TRUE %in% logic){stop("Only sites with 8 character length")}
                statCd = "00003") %>%
       renameNWISColumns()
 
+    # could use attr(gage_data, 'siteInfo') but not a big deal IMO
+
     gage_info <- tibble(
         site_no = site_no,
         drainage_area = readNWISsite(site_no) %>% select(drain_area_va) %>% as.numeric(),
