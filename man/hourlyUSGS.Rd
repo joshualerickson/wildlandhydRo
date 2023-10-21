@@ -17,9 +17,6 @@ hourlyUSGS(procDV, sites = NULL, days = 7, parallel = FALSE, ...)
 
 \item{...}{arguments to pass on to \link[furrr]{future_map}.}
 }
-\value{
-
-}
 \description{
 This function generates hourly NWIS flow data from \url{https://waterservices.usgs.gov/nwis/iv/}.
 It takes the instantaneous data and floors to 1-hour data by taking the mean.

@@ -11,9 +11,6 @@ reportUSGSmv(procDV, sites = NULL)
 
 \item{sites}{A \code{character} USGS NWIS site.}
 }
-\value{
-
-}
 \description{
 Uses \link[dataRetrieval]{readNWISstat} to gather monthly mean flows. Furthermore,
 monthly quantiles are generated similar to \link[wildlandhydRo]{reportUSGSdv}.

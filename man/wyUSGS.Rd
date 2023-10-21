@@ -15,9 +15,6 @@ wyUSGS(procDV, sites = NULL, parallel = FALSE, ...)
 
 \item{...}{arguments to pass on to \link[furrr]{future_map} and \link[wildlandhydRo]{batch_USGSdv}.}
 }
-\value{
-
-}
 \description{
 This function uses the results of the \link[wildlandhydRo]{batch_USGSdv} object to
 generate mean, maximum, median and standard deviation per water year. It also includes peaks from

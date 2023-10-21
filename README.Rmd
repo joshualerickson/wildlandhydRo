@@ -38,6 +38,10 @@ library(tidyverse)
 
 The goal of wildlandhydRo is to create wrapper functions around commonly used packages like [streamstats](https://github.com/markwh/streamstats), [snotelr](https://github.com/bluegreen-labs/snotelr) and [dataRetrieval](https://github.com/USGS-R/dataRetrieval) and prepare them for chunk-based parallelism, data munging and reporting. Basically, a package for me but worth sharing with others.
 
+## Warning!  
+
+As of 2-24-2022 the lfstat package is not available on CRAN. You'll need to download yourself, sorry for the inconvenience! I'll be working on taking that out and implementing into the package.  
+
 ## Installation
 
 You can install the development version from [GitHub](https://github.com/) with:

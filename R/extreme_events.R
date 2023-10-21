@@ -76,7 +76,7 @@ batch_frequency <- function(data, value) {
 
   normal <- stats::qnorm(1-(1/ReturnInterval),mean = mean.x, sd = sd.x, lower.tail = TRUE)
 
-  lognormal <- stats::qnorm(1-(1/ReturnInterval),mean = log_mean.x, sd = log_sd.x)
+  lognormal <- stats::qlnorm(1-(1/ReturnInterval),mean = log_mean.x, sd = log_sd.x)
 
   Gumbel <- evd::qgumbel(1-(1/ReturnInterval), scale = scale_gum, loc = loc_gum)
 
@@ -130,13 +130,23 @@ batch_distribution <- function(data, value,...) {
 
     max.x <- data %>% transmute(x = {{ value }}) %>% na.omit()
   }
+
+
+  lot_outliers <- MGBT::MGBT(max.x$x)$LOThresh
+
+  if(lot_outliers > 0) {max.x_lp <- subset(max.x, x > lot_outliers)} else {max.x_lp <- max.x}
+
   mean.x <- mean(max.x$x, na.rm = TRUE) #mean of max Q
 
   sd.x <- sd(max.x$x, na.rm = TRUE) #standard deviation of max Q
 
-  log_mean.x <- mean(log(max.x$x), na.rm = TRUE) #log mean of max Q
+  mean.x_pearson <- mean(max.x_lp$x, na.rm = TRUE) #mean of max Q
 
-  log_sd.x <- sd(log(max.x$x), na.rm = TRUE) #log of of sd of max Q
+  sd.x_pearson <- sd(max.x_lp$x, na.rm = TRUE) #standard deviation of max Q
+
+  log_mean.x <- mean(log(max.x_lp$x), na.rm = TRUE) #log mean of max Q
+
+  log_sd.x <- sd(log(max.x_lp$x), na.rm = TRUE) #log of of sd of max Q
 
   fevd_gum <- fevd(max.x$x, time.units = "years", type = "Gumbel")
 
@@ -154,13 +164,15 @@ batch_distribution <- function(data, value,...) {
 
   skew <- skewed(max.x$x,type = 3, na.rm = TRUE)
 
-  skew_log <- skewed(log(max.x$x),type = 3, na.rm = TRUE)
+  skew.x_pearson <- skewed(max.x_lp$x, type = 3, na.rm = TRUE)
+
+  skew_log <- skewed(log(max.x_lp$x),type = 3, na.rm = TRUE)
 
   weib <- fitdist(max.x$x, distr = 'weibull',...)
   lnorm <- fitdist(max.x$x, distr = 'lnorm',...)
   norm <- fitdist(max.x$x, distr = 'norm',...)
-  lpearson <- fitdist(max.x$x, distr = "lpearsonIII", start = list(meanlog = log_mean.x, sdlog = log_sd.x, skew = skew_log),...)
-  pearson <- fitdist(max.x$x,  distr = 'pearsonIII', start = list(mean = mean.x, sd = sd.x, skew = skew),...)
+  lpearson <- fitdist(log(max.x_lp$x), distr = "lpearsonIII", start = list(meanlog = log_mean.x, sdlog = log_sd.x, skew = skew_log),...)
+  pearson <- fitdist(max.x$x,  distr = 'pearsonIII', start = list(mean = mean.x_pearson, sd = sd.x_pearson, skew = skew.x_pearson),...)
   gumbel <- fitdist(max.x$x, distr = 'gumbel', start = list(loc = loc_gum, scale = scale_gum),...)
   gev <- suppressWarnings(fitdist(max.x$x, distr = 'gev', start = list(loc = loc_gev, scale = scale_gev, shape = shape_gev),...))
 

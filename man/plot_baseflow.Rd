@@ -17,9 +17,6 @@ plot_baseflow(procDV, sites = NULL, wy, parallel = FALSE, ...)
 
 \item{...}{arguments to pass on to \link[furrr]{future_map}, \link[wildlandhydRo]{batch_USGSdv} and \link[lfstat]{baseflow}.}
 }
-\value{
-
-}
 \description{
 Plot Water Year Base-flow and Total Flow
 }

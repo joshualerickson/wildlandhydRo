@@ -17,9 +17,6 @@ reportUSGSdv(procDV, sites = NULL, days = 10, parallel = FALSE, ...)
 
 \item{...}{arguments to pass on to \link[furrr]{future_map}.}
 }
-\value{
-
-}
 \description{
 This function uses the \link[dataRetrieval]{readNWISstat} to gather daily
 statistics like quantiles/percentiles. Be aware, the \code{current_daily_mean_flow} variable is calculated from the \link[wildlandhydRo]{hourlyUSGS}

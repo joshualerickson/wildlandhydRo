@@ -24,9 +24,6 @@ laura_DeCicco_fun(
 
 \item{endDate}{A character date, e.g. '2002-12-25'}
 }
-\value{
-
-}
 \description{
 30-day moving average
 }

@@ -13,9 +13,6 @@ plot_reportSNOTEL(report, time = "daily", type = "per")
 
 \item{type}{A string ("per", "now", "all") indicating what type of plot.}
 }
-\value{
-
-}
 \description{
 Plot SNOTEL Report
 }
