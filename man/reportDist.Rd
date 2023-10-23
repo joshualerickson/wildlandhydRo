@@ -4,10 +4,12 @@
 \alias{reportDist}
 \title{Summary Statistic Distribution Report}
 \usage{
-reportDist(procDist)
+reportDist(procDist, ...)
 }
 \arguments{
 \item{procDist}{A previously created \link[wildlandhydRo]{batch_distribution} object}
+
+\item{...}{Arguments to pass to \link[fitdistplus]{gofstat}.}
 }
 \value{
 A \code{data.frame}

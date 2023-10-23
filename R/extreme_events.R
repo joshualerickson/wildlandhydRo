@@ -381,6 +381,7 @@ plot_allDist <- function(procDist) {
 #' \link[fitdistrplus]{gofstat} function. Good for choosing which distribution to use. For more details
 #' see the \link[fitdistrplus]{fitdistrplus-package} on how to use the output.
 #' @param procDist A previously created \link[wildlandhydRo]{batch_distribution} object
+#' @param ... Arguments to pass to \link[fitdistplus]{gofstat}.
 #'
 #'
 #' @return A \code{data.frame}
@@ -388,9 +389,9 @@ plot_allDist <- function(procDist) {
 #' @export
 #'
 #'
-reportDist <- function(procDist) {
+reportDist <- function(procDist,...) {
 
-  gstat <- gofstat(procDist) %>% .[c("cvm", "ks", "ad", "aic", "bic")] %>%
+  gstat <- gofstat(procDist, ...) %>% .[c("cvm", "ks", "ad", "aic", "bic")] %>%
     data.frame() %>% rename(`Cramer-von Mises` = "cvm", `Kolmogorov-Smirnov` = "ks",
                             `Anderson-Darling` = "ad", `Akaike's Information Criterion` = "aic",
                             `Bayesian Information Criterion` = "bic")
