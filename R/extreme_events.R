@@ -28,27 +28,27 @@ batch_frequency <- function(data, value) {
 
   if (!nrow(max.x) >= 2) {stop("Warning: Need more data.")}
 
+  lot_outliers <- MGBT::MGBT(max.x$x)$LOThresh
+
+  if(lot_outliers > 0) {max.x_lp <- subset(max.x, x > lot_outliers)} else {max.x_lp <- max.x}
+
   mean.x <- mean(max.x$x, na.rm = TRUE) #mean of max Q
 
   sd.x <- sd(max.x$x, na.rm = TRUE) #standard deviation of max Q
 
-  log_mean.x <- mean(log(max.x$x), na.rm = TRUE) #log mean of max Q
+  mean.x_pearson <- mean(max.x_lp$x, na.rm = TRUE) #mean of max Q
 
-  log_sd.x <- sd(log(max.x$x), na.rm = TRUE) #log of of sd of max Q
+  sd.x_pearson <- sd(max.x_lp$x, na.rm = TRUE) #standard deviation of max Q
 
-  #equation from Maighty 2018, but doesnt' account for n; assumes n in infinite
-  #reason to use the fevd() keep because someone might want it???
+  log_mean.x <- mean(log(max.x_lp$x), na.rm = TRUE) #log mean of max Q
 
-  # gum_scale.x <- sd(max.x$x, na.rm = TRUE)/1.2825 #scale for gumbel
-  #
-  # gum_loc.x <- mean(max.x$x, na.rm = TRUE) - sd(max.x$x, na.rm = TRUE)*0.4501 #loc for gumbel
+  log_sd.x <- sd(log(max.x_lp$x), na.rm = TRUE) #log of of sd of max Q
 
   fevd_gum <- fevd(max.x$x, time.units = "years", type = "Gumbel")
 
   scale_gum <- fevd_gum$results$par[2] %>% unname()
 
   loc_gum <- fevd_gum$results$par[1] %>% unname()
-
 
   fevd_gev <- fevd(max.x$x, time.units = "years", type = "GEV")
 
@@ -60,7 +60,9 @@ batch_frequency <- function(data, value) {
 
   skew <- skewed(max.x$x,type = 3, na.rm = TRUE)
 
-  skew_log <- skewed(log(max.x$x),type = 3, na.rm = TRUE)
+  skew.x_pearson <- skewed(max.x_lp$x, type = 3, na.rm = TRUE)
+
+  skew_log <- skewed(log(max.x_lp$x),type = 3, na.rm = TRUE)
 
   weib <- fitdist(max.x$x, distr = 'weibull')
 
@@ -72,7 +74,7 @@ batch_frequency <- function(data, value) {
 
   lpIII <- smwrBase::qlpearsonIII(1-(1/ReturnInterval), mean = log_mean.x, sd = log_sd.x,  skew = skew_log)
 
-  lp <- smwrBase::qpearsonIII(1-(1/ReturnInterval), mean = mean.x, sd = sd.x, skew = skew)
+  pearson <- smwrBase::qpearsonIII(1-(1/ReturnInterval), mean = mean.x_pearson, sd = sd.x_pearson, skew = skew.x_pearson)
 
   normal <- stats::qnorm(1-(1/ReturnInterval),mean = mean.x, sd = sd.x, lower.tail = TRUE)
 
@@ -88,14 +90,14 @@ batch_frequency <- function(data, value) {
   Flood.Freq <- data.frame(ReturnInterval)
 
   Flood.Freq <- Flood.Freq %>%
-    mutate(LogPearson = lpIII, Pearson = lp, Gumbel = Gumbel,
-           GEV = GEV, Normal = normal, Lognormal = exp(lognormal),
-           Weibull = weibull)
+    mutate(lpearson = lpIII, pearson = pearson, gumbel = Gumbel,
+           gev = GEV, norm = normal, lnorm = exp(lognormal),
+           weibull = weibull)
 
   Flood.Freq <- Flood.Freq %>%
-    pivot_longer(cols = c("Gumbel", "LogPearson", "GEV", "Normal", "Lognormal", "Pearson", "Weibull"),
-                 values_to = "Value",
-                 names_to = "Distribution")
+    pivot_longer(cols = c("gumbel", "lpearson", "gev", "norm", "lnorm", "pearson", "weibull"),
+                 values_to = "value",
+                 names_to = "distribution")
 
   return(as.data.frame(Flood.Freq))
 }
@@ -177,7 +179,7 @@ batch_distribution <- function(data, value,...) {
   gev <- suppressWarnings(fitdist(max.x$x, distr = 'gev', start = list(loc = loc_gev, scale = scale_gev, shape = shape_gev),...))
 
 
-  dist_list <- list(weib = weib, lnorm = lnorm, norm = norm, lpearson = lpearson, pearson = pearson,
+  dist_list <- list(weibull = weib, lnorm = lnorm, norm = norm, lpearson = lpearson, pearson = pearson,
                     gumbel = gumbel, gev = gev)
 
 }
