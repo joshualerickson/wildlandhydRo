@@ -171,7 +171,7 @@ batch_distribution <- function(data, value,...) {
   weib <- fitdist(max.x$x, distr = 'weibull',...)
   lnorm <- fitdist(max.x$x, distr = 'lnorm',...)
   norm <- fitdist(max.x$x, distr = 'norm',...)
-  lpearson <- fitdist(log(max.x_lp$x), distr = "lpearsonIII", start = list(meanlog = log_mean.x, sdlog = log_sd.x, skew = skew_log),...)
+  lpearson <- fitdist(max.x_lp$x, distr = "lpearsonIII", start = list(meanlog = log_mean.x, sdlog = log_sd.x, skew = skew_log),...)
   pearson <- fitdist(max.x$x,  distr = 'pearsonIII', start = list(mean = mean.x_pearson, sd = sd.x_pearson, skew = skew.x_pearson),...)
   gumbel <- fitdist(max.x$x, distr = 'gumbel', start = list(loc = loc_gum, scale = scale_gum),...)
   gev <- suppressWarnings(fitdist(max.x$x, distr = 'gev', start = list(loc = loc_gev, scale = scale_gev, shape = shape_gev),...))
