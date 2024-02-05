@@ -172,7 +172,7 @@ batch_StreamStats <- function(data, group, crs = 4326, parallel = FALSE){
 
   final_sf <- final_df %>%
     dplyr::group_by(group) %>%
-    dplyr::slice(n=1) %>%
+    dplyr::slice(1) %>%
     dplyr::select(group,geometry) %>%
     dplyr::right_join(final_df_wrangle, by = 'group') %>%
     dplyr::relocate(geometry,.after = dplyr::last_col()) %>%
@@ -294,7 +294,7 @@ batch_RRE <- function(data, parallel = FALSE) {
 
     peak_group <- peak_rre %>%
       group_by(group) %>%
-      dplyr::slice(n=1)
+      dplyr::slice(1)
 
 
 
